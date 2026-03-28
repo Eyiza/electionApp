@@ -45,6 +45,7 @@
             <version>4.1.0-M3</version>
             <scope>test</scope>
         </dependency>
+
         <!--This dependency allows for controller test-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
