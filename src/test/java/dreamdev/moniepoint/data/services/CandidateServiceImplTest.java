@@ -1,6 +1,8 @@
 package dreamdev.moniepoint.data.services;
 import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.dtos.requests.CandidateRequest;
+import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.exceptions.DuplicateCandidateException;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
 import dreamdev.moniepoint.services.CandidateService;
@@ -20,9 +22,21 @@ public class CandidateServiceImplTest {
     @Autowired
     private CandidateRepository candidateRepository;
 
+    private CandidateRequest candidatePrecious;
+    private CandidateRequest candidateJohn;
+
     @BeforeEach
     void setUp() {
         candidateRepository.deleteAll();
+        candidatePrecious = new CandidateRequest();
+        candidatePrecious.setFirstName("Precious");
+        candidatePrecious.setLastName("Michael");
+        candidatePrecious.setPosition("President");
+
+        candidateJohn = new CandidateRequest();
+        candidateJohn.setFirstName("John");
+        candidateJohn.setLastName("Doe");
+        candidateJohn.setPosition("President");
     }
 
     @Test
@@ -33,46 +47,46 @@ public class CandidateServiceImplTest {
     @Test
     public void createCandidate_countIsOneTest() {
         assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate("Precious", "Michael", "President");
+        candidateService.createCandidate(candidatePrecious);
         assertEquals(1L, candidateRepository.count());
     }
 
     @Test
     public void createTwiceWithSameFirstAndLastName_throwExceptionTest() {
         assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate("Precious", "Michael", "President");
-        assertThrows(DuplicateCandidateException.class, ()-> candidateService.createCandidate("Precious", "Michael", "President"));
+        candidateService.createCandidate(candidatePrecious);
+        assertThrows(DuplicateCandidateException.class, ()-> candidateService.createCandidate(candidatePrecious));
         assertEquals(1L, candidateRepository.count());
     }
 
     @Test
     public void AddTwoCandidate_countIsTwoTest() {
-        candidateService.createCandidate("Precious", "Michael", "President");
-        candidateService.createCandidate("John", "Doe", "President");
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
         assertEquals(2L, candidateRepository.count());
     }
 
     @Test
     public void getAllCandidates_emptyListTest() {
-        List<Candidate> candidates = candidateService.getAllCandidates();
+        List<CandidateResponse> candidates = candidateService.getAllCandidates();
         assertTrue(candidates.isEmpty());
     }
 
     @Test
     public void getAllCandidates_returnsAllCandidatesTest() {
-        candidateService.createCandidate("Precious", "Michael", "President");
-        candidateService.createCandidate("John", "Doe", "President");
-        List<Candidate> candidates = candidateService.getAllCandidates();
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+        List<CandidateResponse> candidates = candidateService.getAllCandidates();
 
         assertEquals(2, candidates.size());
     }
 
     @Test
     public void getAllCandidates_containsCorrectDataTest() {
-        candidateService.createCandidate("Precious", "Michael", "President");
-        candidateService.createCandidate("John", "Doe", "President");
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
 
-        List<Candidate> candidates = candidateService.getAllCandidates();
+        List<CandidateResponse> candidates = candidateService.getAllCandidates();
         assertEquals(2, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());
@@ -86,32 +100,31 @@ public class CandidateServiceImplTest {
     @Test
     public void findCandidateByFirstNameAndLastName_Test() {
         assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate("Precious", "Michael", "President");
-        candidateService.createCandidate("John", "Doe", "President");
-        candidateService.createCandidate("Joe", "Barnes", "President");
-        Candidate candidate = candidateService.getCandidate("John", "Doe");
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+        CandidateResponse candidate = candidateService.getCandidate(candidateJohn);
         assertEquals("John", candidate.getFirstName());
         assertEquals("Doe", candidate.getLastName());
         assertEquals("President", candidate.getPosition());
         assertEquals(0, candidate.getVoteCount());
-        assertEquals(3L, candidateRepository.count());
+        assertEquals(2L, candidateRepository.count());
     }
 
     @Test
     public void findCandidateByFirstNameAndLastName_ThrowExceptionTest() {
         assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate("Precious", "Michael", "President");
-        candidateService.createCandidate("John", "Doe", "President");
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
         assertEquals(2L, candidateRepository.count());
-        assertThrows(InvalidCandidateIdException.class, ()-> candidateService.getCandidate("John", "Michael"));
+        assertThrows(InvalidCandidateIdException.class, ()-> candidateService.getCandidate(new CandidateRequest("John", "Michael","President")));
     }
 
     @Test
     public void voteCandidate_voteCountIsOneTest() {
-        candidateService.createCandidate("Precious", "Michael", "President");
+        candidateService.createCandidate(candidatePrecious);
         assertEquals(1L, candidateRepository.count());
-        candidateService.voteCandidate("Precious", "Michael", "President");
-        Candidate candidate = candidateService.getCandidate("Precious", "Michael");
+        candidateService.voteCandidate(candidatePrecious);
+        CandidateResponse candidate = candidateService.getCandidate(candidatePrecious);
         assertEquals(1, candidate.getVoteCount());
     }
 }

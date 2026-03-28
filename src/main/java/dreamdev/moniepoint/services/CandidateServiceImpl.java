@@ -2,12 +2,20 @@ package dreamdev.moniepoint.services;
 
 import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.dtos.requests.CandidateRequest;
+import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
+import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.exceptions.DuplicateCandidateException;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static dreamdev.moniepoint.utils.Mapper.*;
 
 @Service
 public class CandidateServiceImpl implements CandidateService {
@@ -15,39 +23,56 @@ public class CandidateServiceImpl implements CandidateService {
     private CandidateRepository candidateRepository;
 
     @Override
-    public void createCandidate(String firstName, String lastName, String position){
+    public CandidateCreationResponse createCandidate(CandidateRequest candidateRequest){
+        duplicationCheck(candidateRequest);
+        Candidate candidate = map(candidateRequest);
+        Candidate savedCandidate = candidateRepository.save(candidate);
+        return mapToCreationResponse(savedCandidate);
+    }
+
+    private void duplicationCheck(CandidateRequest candidateRequest) {
+        String firstName = candidateRequest.getFirstName();
+        String lastName = candidateRequest.getLastName();
         if (candidateRepository.findByFirstNameAndLastName(firstName, lastName).isPresent()){
             throw new DuplicateCandidateException("Candidate already exists");
         }
-        Candidate candidate = new Candidate();
-        candidate.setFirstName(firstName);
-        candidate.setLastName(lastName);
-        candidate.setPosition(position);
-        candidateRepository.save(candidate);
+
     }
 
     @Override
-    public List<Candidate> getAllCandidates() {
-        return candidateRepository.findAll();
+    public List<CandidateResponse> getAllCandidates() {
+        List<Candidate> candidates = candidateRepository.findAll();
+        List<CandidateResponse> candidateResponses = new ArrayList<>();
+        for (Candidate candidate : candidates) {
+            candidateResponses.add(map(candidate));
+        }
+        return candidateResponses;
     }
 
     @Override
-    public Candidate getCandidate(String id) {
+    public CandidateResponse getCandidate(String id) {
         Optional<Candidate> optionalCandidate = candidateRepository.findById(id);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate with id " + id + " does not exist");
-        Candidate candidate = optionalCandidate.get();
+        CandidateResponse candidate = map(optionalCandidate.get());
         return candidate;
     }
 
     @Override
-    public Candidate getCandidate(String firstName, String lastName) {
+    public CandidateResponse getCandidate(CandidateRequest candidateRequest) {
+        Optional<Candidate> optionalCandidate = getCandidateIfItExists(candidateRequest);
+        return map(optionalCandidate.get());
+    }
+
+    private @NonNull Optional<Candidate> getCandidateIfItExists(CandidateRequest candidateRequest) {
+        String firstName = candidateRequest.getFirstName();
+        String lastName = candidateRequest.getLastName();
         Optional<Candidate> optionalCandidate = candidateRepository.findByFirstNameAndLastName(firstName, lastName);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate" + firstName + " " + lastName + " does not exist");
-        return optionalCandidate.get();
+        return optionalCandidate;
     }
 
     @Override
-    public void voteCandidate(String id, String position) {
+    public CandidateResponse voteCandidate(String id, String position) {
         Optional<Candidate> optionalCandidate = candidateRepository.findById(id);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate with id " + id + " does not exist");
         Candidate candidate = optionalCandidate.get();
@@ -56,9 +81,8 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public void voteCandidate(String firstName, String lastName, String position) {
-        Optional<Candidate> optionalCandidate = candidateRepository.findByFirstNameAndLastName(firstName, lastName);
-        if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate" + firstName + " " + lastName + " does not exist");
+    public CandidateResponse voteCandidate(CandidateRequest candidateRequest) {
+        Optional<Candidate> optionalCandidate = getCandidateIfItExists(candidateRequest);
         Candidate candidate = optionalCandidate.get();
         candidate.setVoteCount(candidate.getVoteCount() + 1);
         candidateRepository.save(candidate);

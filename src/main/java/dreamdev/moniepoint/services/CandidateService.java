@@ -1,14 +1,17 @@
 package dreamdev.moniepoint.services;
 
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.dtos.requests.CandidateRequest;
+import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
+import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 
 import java.util.List;
 
 public interface CandidateService {
-    void createCandidate(String firstName, String lastName, String position);
-    List<Candidate> getAllCandidates();
-    Candidate getCandidate(String id);
-    Candidate getCandidate(String firstName, String lastName);
-    void voteCandidate(String id, String position);
-    void voteCandidate(String firstName, String lastName, String position);
+    CandidateCreationResponse createCandidate(CandidateRequest candidateRequest);
+    List<CandidateResponse> getAllCandidates();
+    CandidateResponse getCandidate(String id);
+    CandidateResponse getCandidate(CandidateRequest candidateRequest);
+    CandidateResponse voteCandidate(String id, String position);
+    CandidateResponse voteCandidate(CandidateRequest candidateRequest);
 }
