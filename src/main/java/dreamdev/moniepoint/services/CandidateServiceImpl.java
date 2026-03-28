@@ -32,10 +32,10 @@ public class CandidateServiceImpl implements CandidateService {
     private void duplicationCheck(CandidateRequest candidateRequest) {
         String firstName = candidateRequest.getFirstName();
         String lastName = candidateRequest.getLastName();
-        if (candidateRepository.findByFirstNameAndLastName(firstName, lastName).isPresent()){
+        String position = candidateRequest.getPosition();
+        if (candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position).isPresent()){
             throw new DuplicateCandidateException("Candidate already exists");
         }
-
     }
 
     @Override
@@ -64,13 +64,19 @@ public class CandidateServiceImpl implements CandidateService {
     private Candidate getCandidateIfItExists(CandidateRequest candidateRequest) {
         String firstName = candidateRequest.getFirstName();
         String lastName = candidateRequest.getLastName();
-        Optional<Candidate> optionalCandidate = candidateRepository.findByFirstNameAndLastName(firstName, lastName);
+        String position = candidateRequest.getPosition();
+        Optional<Candidate> optionalCandidate;
+        if (position == null || position.isBlank()) {
+            optionalCandidate = candidateRepository.findByFirstNameAndLastName(firstName, lastName);
+        } else {
+            optionalCandidate = candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position);
+        }
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate" + firstName + " " + lastName + " does not exist");
         return optionalCandidate.get();
     }
 
     @Override
-    public CandidateResponse voteCandidate(String id, String position) {
+    public CandidateResponse voteCandidate(String id) {
         Optional<Candidate> optionalCandidate = candidateRepository.findById(id);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate with id " + id + " does not exist");
         Candidate candidate = optionalCandidate.get();

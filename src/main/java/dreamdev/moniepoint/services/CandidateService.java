@@ -1,6 +1,5 @@
 package dreamdev.moniepoint.services;
 
-import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
@@ -12,6 +11,6 @@ public interface CandidateService {
     List<CandidateResponse> getAllCandidates();
     CandidateResponse getCandidate(String id);
     CandidateResponse getCandidate(CandidateRequest candidateRequest);
-    CandidateResponse voteCandidate(String id, String position);
+    CandidateResponse voteCandidate(String id);
     CandidateResponse voteCandidate(CandidateRequest candidateRequest);
 }

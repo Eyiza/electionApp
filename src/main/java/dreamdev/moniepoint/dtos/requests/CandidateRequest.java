@@ -15,9 +15,9 @@ public class CandidateRequest {
         this.id = id;
     }
 
-    public CandidateRequest(String id, String position) {
-        this.id = id;
-        this.position = position;
+    public CandidateRequest(String firstName, String lastName) {
+        this.firstName = firstName;
+        this.lastName = lastName;
     }
 
     public CandidateRequest(String firstName, String lastName, String position) {
