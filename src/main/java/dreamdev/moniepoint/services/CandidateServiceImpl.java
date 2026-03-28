@@ -5,8 +5,6 @@ import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,7 +28,7 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public Candidate getCandidate(String id) {
+    public Candidate getCandidateById(String id) {
         Optional<Candidate> optionalCandidate = candidateRepository.findById(id);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate with id " + id + " does not exist");
         Candidate candidate = optionalCandidate.get();
