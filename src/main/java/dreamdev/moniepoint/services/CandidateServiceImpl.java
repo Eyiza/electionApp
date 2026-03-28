@@ -66,11 +66,7 @@ public class CandidateServiceImpl implements CandidateService {
         String lastName = candidateRequest.getLastName();
         String position = candidateRequest.getPosition();
         Optional<Candidate> optionalCandidate;
-        if (position == null || position.isBlank()) {
-            optionalCandidate = candidateRepository.findByFirstNameAndLastName(firstName, lastName);
-        } else {
-            optionalCandidate = candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position);
-        }
+        optionalCandidate = candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position);
         if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate" + firstName + " " + lastName + " does not exist");
         return optionalCandidate.get();
     }
