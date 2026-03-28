@@ -1,5 +1,4 @@
 package dreamdev.moniepoint.data.services;
-import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
