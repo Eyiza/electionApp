@@ -122,8 +122,7 @@ public class CandidateServiceImplTest {
     public void voteCandidate_voteCountIsOneTest() {
         candidateService.createCandidate(candidatePrecious);
         assertEquals(1L, candidateRepository.count());
-        candidateService.voteCandidate(candidatePrecious);
-        CandidateResponse candidate = candidateService.getCandidate(candidatePrecious);
+        CandidateResponse candidate = candidateService.voteCandidate(candidatePrecious);
         assertEquals(1, candidate.getVoteCount());
     }
 }

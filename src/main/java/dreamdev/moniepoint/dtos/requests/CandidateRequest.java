@@ -11,6 +11,10 @@ public class CandidateRequest {
 
     public CandidateRequest() {}
 
+    public CandidateRequest(String id){
+        this.id = id;
+    }
+
     public CandidateRequest(String id, String position) {
         this.id = id;
         this.position = position;
