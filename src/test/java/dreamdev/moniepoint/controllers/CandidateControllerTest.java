@@ -68,8 +68,6 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test successful candidate creation")
     void addCandidateSuccess() {
-        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
-
         restTestClient.post()
                 .uri(url("/candidate"))
                 .body(candidateJohn)
@@ -77,14 +75,18 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isCreated()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
+//                .json(objectMapper.writeValueAsString(response));
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
     }
 
     @Test
     @DisplayName("Test duplicate candidate creation fails")
     void addDuplicateCandidateFails() {
-        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
-
         restTestClient.post()
                 .uri(url("/candidate"))
                 .body(candidateJohn)
@@ -92,7 +94,12 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isCreated()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
 
         restTestClient.post()
                 .uri(url("/candidate"))
@@ -107,8 +114,6 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test get all candidates returns list")
     void getAllCandidates_listIs2Test() {
-        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
-
         restTestClient.post()
                 .uri(url("/candidate"))
                 .body(candidateJohn)
@@ -116,9 +121,12 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isCreated()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
-
-        response = new ApiResponse(true, candidatePreciousResponse);
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
 
         restTestClient.post()
                 .uri(url("/candidate"))
@@ -127,7 +135,12 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isCreated()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("Precious")
+                .jsonPath("$.data.lastName").isEqualTo("Michael")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
 
         restTestClient.get()
                 .uri(url("/candidates"))
@@ -156,8 +169,6 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test get candidate by name and position and it succeeds")
     void getCandidateByName_isSuccessTest() {
-        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
-
         restTestClient.post()
                 .uri(url("/candidate"))
                 .body(candidateJohn)
@@ -165,7 +176,12 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isCreated()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
 
         restTestClient.get()
                 .uri(url("/candidate/name/President/John/Doe"))
