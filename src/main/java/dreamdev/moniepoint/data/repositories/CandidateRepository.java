@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CandidateRepository extends MongoRepository<Candidate, String> {
+    @Query("{ 'firstName': { $regex: '^?0$', $options: 'i' }, 'lastName': { $regex: '^?1$', $options: 'i' }, 'position': { $regex: '^?2$', $options: 'i' } }")
     Optional<Candidate> findByFirstNameAndLastNameAndPosition(String firstName, String lastName, String position);
 
     @Query("{ 'firstName': { $regex: ?0, $options: 'i' }, 'lastName': { $regex: ?1, $options: 'i' }, 'position': { $regex: ?2, $options: 'i' } }")

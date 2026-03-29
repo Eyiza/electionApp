@@ -196,4 +196,34 @@ class CandidateControllerTest {
                 .jsonPath("$.data[0].voteCount").isEqualTo(0);
     }
 
+    @Test
+    @DisplayName("Search candidates with incomplete fields should return similar matches")
+    void searchCandidates_byIncompleteFieldsTest() {
+        restTestClient.post()
+                .uri(url("/candidate"))
+                .body(candidateJohn)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0)
+                .jsonPath("$.data.id").exists();
+
+        restTestClient.get()
+                .uri(url("/candidates/search?firstName=jo&lastName=d"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data[0].firstName").isEqualTo("John")
+                .jsonPath("$.data[0].lastName").isEqualTo("Doe")
+                .jsonPath("$.data[0].position").isEqualTo("President")
+                .jsonPath("$.data[0].voteCount").isEqualTo(0);
+    }
+
 }

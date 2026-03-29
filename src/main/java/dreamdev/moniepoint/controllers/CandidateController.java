@@ -43,9 +43,9 @@ public class CandidateController {
 
     @GetMapping("/candidates/search")
     public ResponseEntity<?> searchCandidates(
-            @RequestParam("firstName") String firstName,
-            @RequestParam("lastName") String lastName,
-            @RequestParam("position") String position) {
+            @RequestParam(value = "firstName",required = false, defaultValue = "") String firstName,
+            @RequestParam(value = "lastName", required = false, defaultValue = "") String lastName,
+            @RequestParam(value = "position", required = false, defaultValue = "") String position) {
         try {
             return new ResponseEntity<>(
                     new ApiResponse(true, candidateService.searchCandidates(firstName, lastName, position)),
