@@ -10,5 +10,7 @@ import java.util.List;
 public interface VoterService {
     VoterResponse registerCandidate(VoterRequest voterRequest);
     List<VoterResponse> getVoters();
+    VoterResponse getVoter(String id);
     CandidateResponse voteCandidate(VoteRequest voteRequest);
+
 }

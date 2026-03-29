@@ -7,12 +7,14 @@ import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
 import dreamdev.moniepoint.exceptions.DuplicateVoterException;
+import dreamdev.moniepoint.exceptions.InvalidVoterException;
 import dreamdev.moniepoint.utils.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static dreamdev.moniepoint.utils.Mapper.*;
 
@@ -37,6 +39,13 @@ public class VoterServiceImpl implements VoterService {
         List<VoterResponse> voterResponses = new ArrayList<>();
         for (Voter voter : savedVoters) voterResponses.add(Mapper.map(voter));
         return voterResponses;
+    }
+
+    @Override
+    public VoterResponse getVoter(String id) {
+        Optional<Voter> optionalVoter = voterRepository.findById(id);
+        if (optionalVoter.isEmpty()) throw new InvalidVoterException("Voter with id " + id + " does not exist");
+        return map(optionalVoter.get());
     }
 
     @Override

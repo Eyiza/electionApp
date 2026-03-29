@@ -5,6 +5,7 @@ import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
 import dreamdev.moniepoint.exceptions.DuplicateVoterException;
+import dreamdev.moniepoint.exceptions.InvalidVoterException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,5 +66,19 @@ class VoterServiceImplTest {
         List<VoterResponse> voters = voterService.getVoters();
 
         assertEquals(2, voters.size());
+    }
+
+    @Test
+    public void getVoterById_Test() {
+        VoterResponse savedVoter = voterService.registerCandidate(voterJamie);
+        VoterResponse voter = voterService.getVoter(savedVoter.getId());
+        assertEquals("Jamie", voter.getName());
+        assertEquals("4567", voter.getNin());
+    }
+
+    @Test
+    public void getVoterByInvalidId_throwExceptionTest() {
+        voterService.registerCandidate(voterJamie);
+        assertThrows(InvalidVoterException.class, ()-> voterService.getVoter("Invalid"));
     }
 }
