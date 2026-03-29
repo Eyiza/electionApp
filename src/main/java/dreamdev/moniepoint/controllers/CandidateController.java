@@ -33,7 +33,7 @@ public class CandidateController {
     }
 
     @GetMapping("/candidate/id/{id}")
-    public ResponseEntity<?> getCandidate(@PathVariable String id){
+    public ResponseEntity<?> getCandidate(@PathVariable("id") String id){
         try {
             return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(id)), HttpStatus.OK);
         } catch (ElectionAppException e){
@@ -41,25 +41,25 @@ public class CandidateController {
         }
     }
 
-//    @GetMapping("/candidate/name/{position}/{firstName}/{lastName}")
-//    public ResponseEntity<?> getCandidate(@PathVariable String position, @PathVariable String firstName, @PathVariable String lastName){
-//        try {
-//            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName, position);
-//            return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(candidateRequest)), HttpStatus.OK);
-//        } catch (ElectionAppException e){
-//            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
-//        }
-//    }
-
-    @GetMapping("/candidate/name/{firstName}/{lastName}")
-    public ResponseEntity<?> getCandidate(@PathVariable String firstName, @PathVariable String lastName){
+    @GetMapping("/candidate/name/{position}/{firstName}/{lastName}")
+    public ResponseEntity<?> getCandidate(@PathVariable String position, @PathVariable String firstName, @PathVariable String lastName){
         try {
-            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName);
+            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName, position);
             return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(candidateRequest)), HttpStatus.OK);
         } catch (ElectionAppException e){
             return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+//    @GetMapping("/candidates/name/{firstName}/{lastName}")
+//    public ResponseEntity<?> getCandidate(@PathVariable String firstName, @PathVariable String lastName){
+//        try {
+//            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName);
+//            return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(candidateRequest)), HttpStatus.OK);
+//        } catch (ElectionAppException e){
+//            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
+//        }
+//    }
 
     @PatchMapping("/vote/id/{id}")
     public ResponseEntity<?> voteCandidate(@PathVariable String id){
