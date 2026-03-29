@@ -55,40 +55,6 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public CandidateResponse getCandidate(CandidateRequest candidateRequest) {
-        Candidate optionalCandidate = getCandidateIfItExists(candidateRequest);
-        return map(optionalCandidate);
-    }
-
-    private Candidate getCandidateIfItExists(CandidateRequest candidateRequest) {
-        String firstName = candidateRequest.getFirstName();
-        String lastName = candidateRequest.getLastName();
-        String position = candidateRequest.getPosition();
-        Optional<Candidate> optionalCandidate;
-        optionalCandidate = candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position);
-        if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate " + firstName + " " + lastName + " does not exist");
-        return optionalCandidate.get();
-    }
-
-    @Override
-    public CandidateResponse voteCandidate(String id) {
-        Optional<Candidate> optionalCandidate = candidateRepository.findById(id);
-        if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate with id " + id + " does not exist");
-        Candidate candidate = optionalCandidate.get();
-        candidate.setVoteCount(candidate.getVoteCount() + 1);
-        Candidate savedCandidate = candidateRepository.save(candidate);
-        return map(savedCandidate);
-    }
-
-    @Override
-    public CandidateResponse voteCandidate(CandidateRequest candidateRequest) {
-        Candidate candidate = getCandidateIfItExists(candidateRequest);
-        candidate.setVoteCount(candidate.getVoteCount() + 1);
-        Candidate savedCandidate = candidateRepository.save(candidate);
-        return map(savedCandidate);
-    }
-
-    @Override
     public List<CandidateResponse> searchCandidates(String firstName, String lastName, String position) {
         List<Candidate> candidates = candidateRepository.searchByFields(firstName, lastName, position);
         List<CandidateResponse> candidateResponses = new ArrayList<>();

@@ -2,8 +2,10 @@ package dreamdev.moniepoint.services;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
+import dreamdev.moniepoint.dtos.responses.VoterResponse;
 import dreamdev.moniepoint.exceptions.DuplicateCandidateException;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
+import dreamdev.moniepoint.exceptions.InvalidVoterException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,33 +98,18 @@ public class CandidateServiceImplTest {
     }
 
     @Test
-    public void findCandidateByFirstNameAndLastName_Test() {
-        assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate(candidatePrecious);
-        candidateService.createCandidate(candidateJohn);
-        CandidateResponse candidate = candidateService.getCandidate(candidateJohn);
+    public void getCandidateById_Test() {
+        CandidateResponse candidate = candidateService.createCandidate(candidateJohn);
         assertEquals("John", candidate.getFirstName());
         assertEquals("Doe", candidate.getLastName());
         assertEquals("President", candidate.getPosition());
         assertEquals(0, candidate.getVoteCount());
-        assertEquals(2L, candidateRepository.count());
     }
 
     @Test
-    public void findCandidateByFirstNameAndLastName_ThrowExceptionTest() {
-        assertEquals(0L, candidateRepository.count());
-        candidateService.createCandidate(candidatePrecious);
-        candidateService.createCandidate(candidateJohn);
-        assertEquals(2L, candidateRepository.count());
-        assertThrows(InvalidCandidateIdException.class, ()-> candidateService.getCandidate(new CandidateRequest("John", "Michael","President")));
-    }
-
-    @Test
-    public void voteCandidate_voteCountIsOneTest() {
-        candidateService.createCandidate(candidatePrecious);
-        assertEquals(1L, candidateRepository.count());
-        CandidateResponse candidate = candidateService.voteCandidate(candidatePrecious);
-        assertEquals(1, candidate.getVoteCount());
+    public void getCandidateByInvalidId_throwExceptionTest() {
+        CandidateResponse candidate = candidateService.createCandidate(candidateJohn);
+        assertThrows(InvalidCandidateIdException.class, ()-> candidateService.getCandidate("Invalid"));
     }
 
     @Test
