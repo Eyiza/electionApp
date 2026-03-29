@@ -1,22 +1,42 @@
 package dreamdev.moniepoint.services;
 
+import dreamdev.moniepoint.data.models.Voter;
+import dreamdev.moniepoint.data.repositories.VoterRepository;
 import dreamdev.moniepoint.dtos.requests.VoteRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
+import dreamdev.moniepoint.exceptions.DuplicateVoterException;
+import dreamdev.moniepoint.utils.Mapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static dreamdev.moniepoint.utils.Mapper.*;
+
+@Service
 public class VoterServiceImpl implements VoterService {
+    @Autowired
+    private VoterRepository voterRepository;
 
     @Override
-    public VoterResponse voteCandidate(VoterRequest voterRequest) {
-        return null;
+    public VoterResponse registerCandidate(VoterRequest voterRequest) {
+        if (voterRepository.findByNin(voterRequest.getNin()).isPresent()) {
+            throw new DuplicateVoterException("Voter with NIN " + voterRequest.getNin() + " is already registered");
+        }
+        Voter voter = map(voterRequest);
+        Voter savedVoter = voterRepository.save(voter);
+        return Mapper.map(savedVoter);
     }
 
     @Override
     public List<VoterResponse> getVoters() {
-        return List.of();
+        List<Voter> savedVoters = voterRepository.findAll();
+        List<VoterResponse> voterResponses = new ArrayList<>();
+        for (Voter voter : savedVoters) voterResponses.add(Mapper.map(voter));
+        return voterResponses;
     }
 
     @Override

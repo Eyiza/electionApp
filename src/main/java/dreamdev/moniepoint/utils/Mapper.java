@@ -3,7 +3,6 @@ package dreamdev.moniepoint.utils;
 import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.models.Voter;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
-import dreamdev.moniepoint.dtos.requests.VoteRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
@@ -43,7 +42,7 @@ public class Mapper {
         return voter;
     }
 
-    public static VoterResponse mapToVoterResponse(Voter voter) {
+    public static VoterResponse map(Voter voter) {
         VoterResponse response = new VoterResponse();
         response.setId(voter.getId());
         response.setName(voter.getName());
