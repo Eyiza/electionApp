@@ -1,9 +1,13 @@
 package dreamdev.moniepoint.utils;
 
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.data.models.Voter;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
+import dreamdev.moniepoint.dtos.requests.VoteRequest;
+import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
+import dreamdev.moniepoint.dtos.responses.VoterResponse;
 
 public class Mapper {
     public static Candidate map(CandidateRequest candidateRequest) {
@@ -30,5 +34,21 @@ public class Mapper {
         candidateResponse.setPosition(candidate.getPosition());
         candidateResponse.setVoteCount(candidate.getVoteCount());
         return candidateResponse;
+    }
+
+    public static Voter map(VoterRequest voterRequest) {
+        Voter voter = new Voter();
+        voter.setName(voterRequest.getName());
+        voter.setNin(voterRequest.getNin());
+        return voter;
+    }
+
+    public static VoterResponse mapToVoterResponse(Voter voter) {
+        VoterResponse response = new VoterResponse();
+        response.setId(voter.getId());
+        response.setName(voter.getName());
+        response.setNin(voter.getNin());
+        response.setVotedPositions(voter.getVotedPositions());
+        return response;
     }
 }
