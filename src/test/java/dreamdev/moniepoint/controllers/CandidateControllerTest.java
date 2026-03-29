@@ -160,20 +160,16 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test get candidate by name and position and it succeeds")
     void getCandidateByName_isSuccessTest() {
-        restTestClient.post()
-                .uri(url("/candidate"))
-                .body(candidatePrecious);
+        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateJohn);
-
-        CandidateResponse candidateResponse = new CandidateResponse();
-        candidateResponse.setFirstName("John");
-        candidateResponse.setLastName("Doe");
-        candidateResponse.setPosition("President");
-        candidateResponse.setVoteCount(0);
-        ApiResponse response = new ApiResponse(true, candidateResponse);
+                .body(candidateJohn)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody()
+                .json(objectMapper.writeValueAsString(response));
 
         restTestClient.get()
                 .uri(url("/candidate/name/President/John/Doe"))
@@ -181,8 +177,11 @@ class CandidateControllerTest {
                 .expectStatus()
                 .isOk()
                 .expectBody()
-                .json(objectMapper.writeValueAsString(response));
-
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.firstName").isEqualTo("John")
+                .jsonPath("$.data.lastName").isEqualTo("Doe")
+                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0);
     }
 
 }
