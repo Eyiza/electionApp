@@ -32,6 +32,12 @@ class CandidateControllerTest {
     @Autowired
     private CandidateRepository candidateRepository;
 
+    private CandidateRequest candidatePrecious;
+    private CandidateRequest candidateJohn;
+
+    private CandidateCreationResponse candidatePreciousResponse;
+    private CandidateCreationResponse candidateJohnResponse;
+
     private String url(String path) {
         return "http://localhost:%d%s".formatted(port, path);
     }
@@ -39,6 +45,26 @@ class CandidateControllerTest {
     @BeforeEach
     void setUp() {
         candidateRepository.deleteAll();
+
+        candidatePrecious = new CandidateRequest();
+        candidatePrecious.setFirstName("Precious");
+        candidatePrecious.setLastName("Michael");
+        candidatePrecious.setPosition("President");
+
+        candidateJohn = new CandidateRequest();
+        candidateJohn.setFirstName("John");
+        candidateJohn.setLastName("Doe");
+        candidateJohn.setPosition("President");
+
+        candidatePreciousResponse = new CandidateCreationResponse();
+        candidatePreciousResponse.setFirstName("Precious");
+        candidatePreciousResponse.setLastName("Michael");
+        candidatePreciousResponse.setPosition("President");
+
+        candidateJohnResponse = new CandidateCreationResponse();
+        candidateJohnResponse.setFirstName("John");
+        candidateJohnResponse.setLastName("Doe");
+        candidateJohnResponse.setPosition("President");
     }
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -46,21 +72,11 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test successful candidate creation")
     void addCandidateSuccess() {
-        CandidateRequest candidateRequest = new CandidateRequest();
-        candidateRequest.setFirstName("John");
-        candidateRequest.setLastName("Doe");
-        candidateRequest.setPosition("President");
-
-        CandidateCreationResponse candidateResponse = new CandidateCreationResponse();
-        candidateResponse.setFirstName("John");
-        candidateResponse.setLastName("Doe");
-        candidateResponse.setPosition("President");
-
-        ApiResponse response = new ApiResponse(true, candidateResponse);
+        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateRequest)
+                .body(candidateJohn)
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -71,21 +87,11 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test duplicate candidate creation fails")
     void addDuplicateCandidateFails() {
-        CandidateRequest candidateRequest = new CandidateRequest();
-        candidateRequest.setFirstName("John");
-        candidateRequest.setLastName("Doe");
-        candidateRequest.setPosition("President");
-
-        CandidateCreationResponse candidateResponse = new CandidateCreationResponse();
-        candidateResponse.setFirstName("John");
-        candidateResponse.setLastName("Doe");
-        candidateResponse.setPosition("President");
-
-        ApiResponse response = new ApiResponse(true, candidateResponse);
+        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateRequest)
+                .body(candidateJohn)
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -94,7 +100,7 @@ class CandidateControllerTest {
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateRequest)
+                .body(candidateJohn)
                 .exchange()
                 .expectStatus()
                 .isBadRequest()
@@ -105,40 +111,22 @@ class CandidateControllerTest {
     @Test
     @DisplayName("Test get all candidates returns list")
     void getAllCandidates_listIs2Test() {
-        CandidateRequest candidateRequest = new CandidateRequest();
-        candidateRequest.setFirstName("John");
-        candidateRequest.setLastName("Doe");
-        candidateRequest.setPosition("President");
-
-        CandidateCreationResponse candidateResponse = new CandidateCreationResponse();
-        candidateResponse.setFirstName("John");
-        candidateResponse.setLastName("Doe");
-        candidateResponse.setPosition("President");
-
-        ApiResponse response = new ApiResponse(true, candidateResponse);
+        ApiResponse response = new ApiResponse(true, candidateJohnResponse);
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateRequest)
+                .body(candidateJohn)
                 .exchange()
                 .expectStatus()
                 .isCreated()
                 .expectBody()
                 .json(objectMapper.writeValueAsString(response));
 
-        candidateRequest.setFirstName("Precious");
-        candidateRequest.setLastName("Michael");
-        candidateRequest.setPosition("President");
-
-        candidateResponse.setFirstName("Precious");
-        candidateResponse.setLastName("Michael");
-        candidateResponse.setPosition("President");
-
-        response = new ApiResponse(true, candidateResponse);
+        response = new ApiResponse(true, candidatePreciousResponse);
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidateRequest)
+                .body(candidatePrecious)
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -164,7 +152,7 @@ class CandidateControllerTest {
                 .uri(url("/candidate"))
                 .exchange()
                 .expectStatus()
-                .isCreated()
+                .isOk()
                 .expectBody()
                 .json(objectMapper.writeValueAsString(response));
     }
