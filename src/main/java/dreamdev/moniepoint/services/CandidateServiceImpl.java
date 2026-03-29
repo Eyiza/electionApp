@@ -3,7 +3,6 @@ package dreamdev.moniepoint.services;
 import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
-import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.exceptions.DuplicateCandidateException;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
@@ -22,11 +21,11 @@ public class CandidateServiceImpl implements CandidateService {
     private CandidateRepository candidateRepository;
 
     @Override
-    public CandidateCreationResponse createCandidate(CandidateRequest candidateRequest){
+    public CandidateResponse createCandidate(CandidateRequest candidateRequest){
         duplicationCheck(candidateRequest);
         Candidate candidate = map(candidateRequest);
         Candidate savedCandidate = candidateRepository.save(candidate);
-        return mapToCreationResponse(savedCandidate);
+        return map(savedCandidate);
     }
 
     private void duplicationCheck(CandidateRequest candidateRequest) {

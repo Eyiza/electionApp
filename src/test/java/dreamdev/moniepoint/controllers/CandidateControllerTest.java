@@ -3,9 +3,7 @@ package dreamdev.moniepoint.controllers;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.ApiResponse;
-import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,8 +15,6 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.ArrayList;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
@@ -35,8 +31,8 @@ class CandidateControllerTest {
     private CandidateRequest candidatePrecious;
     private CandidateRequest candidateJohn;
 
-    private CandidateCreationResponse candidatePreciousResponse;
-    private CandidateCreationResponse candidateJohnResponse;
+    private CandidateResponse candidatePreciousResponse;
+    private CandidateResponse candidateJohnResponse;
 
     private String url(String path) {
         return "http://localhost:%d%s".formatted(port, path);
@@ -56,12 +52,12 @@ class CandidateControllerTest {
         candidateJohn.setLastName("Doe");
         candidateJohn.setPosition("President");
 
-        candidatePreciousResponse = new CandidateCreationResponse();
+        candidatePreciousResponse = new CandidateResponse();
         candidatePreciousResponse.setFirstName("Precious");
         candidatePreciousResponse.setLastName("Michael");
         candidatePreciousResponse.setPosition("President");
 
-        candidateJohnResponse = new CandidateCreationResponse();
+        candidateJohnResponse = new CandidateResponse();
         candidateJohnResponse.setFirstName("John");
         candidateJohnResponse.setLastName("Doe");
         candidateJohnResponse.setPosition("President");

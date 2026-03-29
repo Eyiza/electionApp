@@ -7,5 +7,6 @@ import java.util.Set;
 @Data
 public class VoteResponse {
     private String name;
-    private Set<String> votes;
+    private String candidateName;
+    private Set<String> votedPositions;
 }

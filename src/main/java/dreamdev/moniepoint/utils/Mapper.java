@@ -4,8 +4,8 @@ import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.models.Voter;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
-import dreamdev.moniepoint.dtos.responses.CandidateCreationResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
+import dreamdev.moniepoint.dtos.responses.VoteResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
 
 public class Mapper {
@@ -15,14 +15,6 @@ public class Mapper {
         candidate.setLastName(candidateRequest.getLastName());
         candidate.setPosition(candidateRequest.getPosition());
         return candidate;
-    }
-
-    public static CandidateCreationResponse mapToCreationResponse(Candidate candidate) {
-        CandidateCreationResponse candidateResponse = new CandidateCreationResponse();
-        candidateResponse.setFirstName(candidate.getFirstName());
-        candidateResponse.setLastName(candidate.getLastName());
-        candidateResponse.setPosition(candidate.getPosition());
-        return candidateResponse;
     }
 
     public static CandidateResponse map(Candidate candidate) {
@@ -48,6 +40,14 @@ public class Mapper {
         response.setName(voter.getName());
         response.setNin(voter.getNin());
         response.setVotedPositions(voter.getVotedPositions());
+        return response;
+    }
+
+    public static VoteResponse map(Voter voter, String candidateName) {
+        VoteResponse response = new VoteResponse();
+        response.setName(voter.getName());
+        response.setVotedPositions(voter.getVotedPositions());
+        response.setCandidateName(candidateName);
         return response;
     }
 }
