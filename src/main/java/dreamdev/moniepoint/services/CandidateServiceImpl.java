@@ -67,7 +67,7 @@ public class CandidateServiceImpl implements CandidateService {
         String position = candidateRequest.getPosition();
         Optional<Candidate> optionalCandidate;
         optionalCandidate = candidateRepository.findByFirstNameAndLastNameAndPosition(firstName, lastName, position);
-        if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate" + firstName + " " + lastName + " does not exist");
+        if(optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate " + firstName + " " + lastName + " does not exist");
         return optionalCandidate.get();
     }
 
@@ -88,5 +88,16 @@ public class CandidateServiceImpl implements CandidateService {
         Candidate savedCandidate = candidateRepository.save(candidate);
         return map(savedCandidate);
     }
+
+    @Override
+    public List<CandidateResponse> searchCandidates(String firstName, String lastName, String position) {
+        List<Candidate> candidates = candidateRepository.searchByFields(firstName, lastName, position);
+        List<CandidateResponse> candidateResponses = new ArrayList<>();
+        for (Candidate candidate : candidates) {
+            candidateResponses.add(map(candidate));
+        }
+        return candidateResponses;
+    }
+
 
 }

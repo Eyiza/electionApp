@@ -13,4 +13,5 @@ public interface CandidateService {
     CandidateResponse getCandidate(CandidateRequest candidateRequest);
     CandidateResponse voteCandidate(String id);
     CandidateResponse voteCandidate(CandidateRequest candidateRequest);
+    List<CandidateResponse> searchCandidates(String firstName, String lastName, String position);
 }

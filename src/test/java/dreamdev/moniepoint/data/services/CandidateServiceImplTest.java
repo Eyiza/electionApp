@@ -125,5 +125,16 @@ public class CandidateServiceImplTest {
         CandidateResponse candidate = candidateService.voteCandidate(candidatePrecious);
         assertEquals(1, candidate.getVoteCount());
     }
+
+    @Test
+    public void searchCandidateByFirstNameAndLastName_Test() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael", "pres");
+        assertEquals(1, candidates.size());
+        assertEquals("Precious", candidates.get(0).getFirstName());
+        assertEquals("Michael", candidates.get(0).getLastName());
+        assertEquals("President", candidates.get(0).getPosition());
+    }
 }
 

@@ -3,11 +3,14 @@ package dreamdev.moniepoint.data.repositories;
 import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface CandidateRepository extends MongoRepository<Candidate, String> {
-    List<Candidate> findByFirstNameAndLastName(String firstName, String lastName);
     Optional<Candidate> findByFirstNameAndLastNameAndPosition(String firstName, String lastName, String position);
+
+    @Query("{ 'firstName': { $regex: ?0, $options: 'i' }, 'lastName': { $regex: ?1, $options: 'i' }, 'position': { $regex: ?2, $options: 'i' } }")
+    List<Candidate> searchByFields(String firstName, String lastName, String position);
 }
