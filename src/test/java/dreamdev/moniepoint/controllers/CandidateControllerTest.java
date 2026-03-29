@@ -148,8 +148,8 @@ class CandidateControllerTest {
     void getAllCandidates_isEmptyTest() {
         ApiResponse response = new ApiResponse(true, new ArrayList<>());
 
-        restTestClient.post()
-                .uri(url("/candidate"))
+        restTestClient.get()
+                .uri(url("/candidates"))
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -157,7 +157,32 @@ class CandidateControllerTest {
                 .json(objectMapper.writeValueAsString(response));
     }
 
+    @Test
+    @DisplayName("Test get candidate by name and position and it succeeds")
+    void getCandidateByName_isSuccessTest() {
+        restTestClient.post()
+                .uri(url("/candidate"))
+                .body(candidatePrecious);
 
+        restTestClient.post()
+                .uri(url("/candidate"))
+                .body(candidateJohn);
 
+        CandidateResponse candidateResponse = new CandidateResponse();
+        candidateResponse.setFirstName("John");
+        candidateResponse.setLastName("Doe");
+        candidateResponse.setPosition("President");
+        candidateResponse.setVoteCount(0);
+        ApiResponse response = new ApiResponse(true, candidateResponse);
+
+        restTestClient.get()
+                .uri(url("/candidate/name/President/John/Doe"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .json(objectMapper.writeValueAsString(response));
+
+    }
 
 }
