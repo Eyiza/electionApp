@@ -1,7 +1,6 @@
 package dreamdev.moniepoint.data.repositories;
 
 import dreamdev.moniepoint.data.models.Candidate;
-import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
