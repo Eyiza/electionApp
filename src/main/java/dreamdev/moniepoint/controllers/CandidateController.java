@@ -32,45 +32,10 @@ public class CandidateController {
         }
     }
 
-    @GetMapping("/candidate/id/{id}")
+    @GetMapping("/candidate/{id}")
     public ResponseEntity<?> getCandidate(@PathVariable("id") String id){
         try {
             return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(id)), HttpStatus.OK);
-        } catch (ElectionAppException e){
-            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @GetMapping("/candidate/name/{position}/{firstName}/{lastName}")
-    public ResponseEntity<?> getCandidate(
-            @PathVariable("position") String position,
-            @PathVariable("firstName") String firstName,
-            @PathVariable("lastName") String lastName){
-        try {
-            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName, position);
-            return new ResponseEntity<>(new ApiResponse(true, candidateService.getCandidate(candidateRequest)), HttpStatus.OK);
-        } catch (ElectionAppException e){
-            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @PatchMapping("/vote/id/{id}")
-    public ResponseEntity<?> voteCandidate(@PathVariable("id") String id){
-        try {
-            return new ResponseEntity<>(new ApiResponse(true, candidateService.voteCandidate(id)), HttpStatus.OK);
-        } catch (ElectionAppException e){
-            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @PatchMapping("/vote/name/{position}/{firstName}/{lastName}")
-    public ResponseEntity<?> voteCandidate(
-            @PathVariable("position") String position,
-            @PathVariable("firstName") String firstName,
-            @PathVariable("lastName") String lastName){
-        try {
-            CandidateRequest candidateRequest = new CandidateRequest(firstName, lastName, position);
-            return new ResponseEntity<>(new ApiResponse(true, candidateService.voteCandidate(candidateRequest)), HttpStatus.OK);
         } catch (ElectionAppException e){
             return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
         }

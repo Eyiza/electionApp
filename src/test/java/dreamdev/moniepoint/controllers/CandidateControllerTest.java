@@ -184,16 +184,16 @@ class CandidateControllerTest {
                 .jsonPath("$.data.id").exists();
 
         restTestClient.get()
-                .uri(url("/candidate/name/President/John/Doe"))
+                .uri(url("/candidates/search?position=President&firstName=John&lastName=Doe"))
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.firstName").isEqualTo("John")
-                .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0);
+                .jsonPath("$.data[0].firstName").isEqualTo("John")
+                .jsonPath("$.data[0].lastName").isEqualTo("Doe")
+                .jsonPath("$.data[0].position").isEqualTo("President")
+                .jsonPath("$.data[0].voteCount").isEqualTo(0);
     }
 
 }
