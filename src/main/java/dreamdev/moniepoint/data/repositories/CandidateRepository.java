@@ -13,4 +13,7 @@ public interface CandidateRepository extends MongoRepository<Candidate, String> 
 
     @Query("{ 'firstName': { $regex: ?0, $options: 'i' }, 'lastName': { $regex: ?1, $options: 'i' }, 'position': { $regex: ?2, $options: 'i' } }")
     List<Candidate> searchByFields(String firstName, String lastName, String position);
+
+    List<Candidate> findByPositionIgnoreCaseOrderByVoteCountDesc(String position);
+    List<Candidate> findAllByOrderByVoteCountDesc();
 }

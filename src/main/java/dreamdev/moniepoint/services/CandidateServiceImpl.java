@@ -9,9 +9,7 @@ import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static dreamdev.moniepoint.utils.Mapper.*;
 
@@ -62,6 +60,33 @@ public class CandidateServiceImpl implements CandidateService {
             candidateResponses.add(map(candidate));
         }
         return candidateResponses;
+    }
+
+    @Override
+    public Map<String, List<CandidateResponse>> getResults() {
+        List<Candidate> candidates = candidateRepository.findAllByOrderByVoteCountDesc();
+        Map<String, List<CandidateResponse>> results = new LinkedHashMap<>();
+        for (Candidate candidate : candidates) {
+            String position = candidate.getPosition();
+            List<CandidateResponse> positionsResult = results.get(position);
+            if (positionsResult == null) {
+                positionsResult = new ArrayList<>();
+                results.put(position, positionsResult);
+            }
+            positionsResult.add(map(candidate));
+        }
+        return results;
+    }
+
+    @Override
+    public List<CandidateResponse> getResultsByPosition(String position) {
+        List<Candidate> candidates = candidateRepository.findByPositionIgnoreCaseOrderByVoteCountDesc(position);
+        System.out.println(candidates.toString());
+        List<CandidateResponse> responses = new ArrayList<>();
+        for (Candidate candidate : candidates) {
+            responses.add(map(candidate));
+        }
+        return responses;
     }
 
 

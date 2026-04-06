@@ -1,9 +1,11 @@
 package dreamdev.moniepoint.controllers;
 
+import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.ApiResponse;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
+import dreamdev.moniepoint.services.CandidateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,6 +29,9 @@ class CandidateControllerTest {
 
     @Autowired
     private CandidateRepository candidateRepository;
+
+    @Autowired
+    private CandidateService candidateService;
 
     private CandidateRequest candidatePrecious;
     private CandidateRequest candidateJohn;
@@ -224,6 +229,125 @@ class CandidateControllerTest {
                 .jsonPath("$.data[0].lastName").isEqualTo("Doe")
                 .jsonPath("$.data[0].position").isEqualTo("President")
                 .jsonPath("$.data[0].voteCount").isEqualTo(0);
+    }
+
+
+    @Test
+    @DisplayName("Test that get results returns empty when there are no candidates")
+    void getResults_emptyTest() {
+        restTestClient.get()
+                .uri(url("/results"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data").isEmpty();
+    }
+
+    @Test
+    @DisplayName("Test that get results groups candidates by position")
+    void getResults_groupedByPosition_Test() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+
+        CandidateRequest candidateJane = new CandidateRequest();
+        candidateJane.setFirstName("Jane");
+        candidateJane.setLastName("Doe");
+        candidateJane.setPosition("Governor");
+        candidateService.createCandidate(candidateJane);
+
+        restTestClient.get()
+                .uri(url("/results"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.President.length()").isEqualTo(2)
+                .jsonPath("$.data.Governor.length()").isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Test that get results orders candidates by descending vote count")
+    void getResults_orderedByVoteCount_Test() {
+        String preciousId = candidateService.createCandidate(candidatePrecious).getId();
+        String johnId = candidateService.createCandidate(candidateJohn).getId();
+
+        Candidate candidate = candidateRepository.findById(preciousId).get();
+        candidate.setVoteCount(10);
+        candidateRepository.save(candidate);
+
+        candidate = candidateRepository.findById(johnId).get();
+        candidate.setVoteCount(4);
+        candidateRepository.save(candidate);
+
+        restTestClient.get()
+                .uri(url("/results"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.data.President[0].firstName").isEqualTo("Precious")
+                .jsonPath("$.data.President[1].firstName").isEqualTo("John");
+    }
+
+    // ─── GET /results/{position} ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("Test that get results by position returns only that position")
+    void getResultsByPosition_successTest() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+        CandidateRequest candidateJane = new CandidateRequest();
+        candidateJane.setFirstName("Jane");
+        candidateJane.setLastName("Doe");
+        candidateJane.setPosition("Governor");
+        candidateService.createCandidate(candidateJane);
+
+        restTestClient.get()
+                .uri(url("/results/president"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.length()").isEqualTo(2)
+                .jsonPath("$.data[0].position").isEqualTo("President")
+                .jsonPath("$.data[1].position").isEqualTo("President");
+    }
+
+    @Test
+    @DisplayName("Test that get results by position orders by vote count")
+    void getResultsByPosition_orderedByVoteCount_Test() {
+        String preciousId = candidateService.createCandidate(candidatePrecious).getId();
+        String johnId = candidateService.createCandidate(candidateJohn).getId();
+
+        Candidate candidate = candidateRepository.findById(preciousId).get();
+        candidate.setVoteCount(2);
+        candidateRepository.save(candidate);
+
+        candidate = candidateRepository.findById(johnId).get();
+        candidate.setVoteCount(4);
+        candidateRepository.save(candidate);
+
+        restTestClient.get()
+                .uri(url("/results/president"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.data[0].firstName").isEqualTo("John")
+                .jsonPath("$.data[1].firstName").isEqualTo("Precious");
+    }
+
+    @Test
+    @DisplayName("Test that get results by unknown position returns empty list")
+    void getResultsByPosition_unknownPosition_returnsEmpty_Test() {
+        candidateService.createCandidate(candidatePrecious);
+
+        restTestClient.get()
+                .uri(url("/results/senator"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.length()").isEqualTo(0);
     }
 
 }

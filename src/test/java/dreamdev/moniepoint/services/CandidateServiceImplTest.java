@@ -1,4 +1,5 @@
 package dreamdev.moniepoint.services;
+import dreamdev.moniepoint.data.models.Candidate;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -120,5 +122,99 @@ public class CandidateServiceImplTest {
         assertEquals("Michael", candidates.get(0).getLastName());
         assertEquals("President", candidates.get(0).getPosition());
     }
+
+    @Test
+    public void getResults_isEmptyWhenNoCandidateExist_Test() {
+        Map<String, List<CandidateResponse>> results = candidateService.getResults();
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    public void getResults_isGroupedByPosition_Test() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+
+        CandidateRequest candidateJane = new CandidateRequest();
+        candidateJane.setFirstName("Jane");
+        candidateJane.setLastName("Doe");
+        candidateJane.setPosition("Governor");
+        candidateService.createCandidate(candidateJane);
+
+        Map<String, List<CandidateResponse>> results = candidateService.getResults();
+
+        assertEquals(2, results.size());
+        assertTrue(results.containsKey("President"));
+        assertTrue(results.containsKey("Governor"));
+        assertEquals(2, results.get("President").size());
+        assertEquals(1, results.get("Governor").size());
+    }
+
+    @Test
+    public void getResults_candidatesAreOrderedByVoteCount_Test() {
+        String preciousId = candidateService.createCandidate(candidatePrecious).getId();
+        String johnId = candidateService.createCandidate(candidateJohn).getId();
+
+        Candidate candidate = candidateRepository.findById(preciousId).get();
+        candidate.setVoteCount(10);
+        candidateRepository.save(candidate);
+
+        candidate = candidateRepository.findById(johnId).get();
+        candidate.setVoteCount(4);
+        candidateRepository.save(candidate);
+
+        Map<String, List<CandidateResponse>> results = candidateService.getResults();
+        assertEquals(1, results.size());
+        List<CandidateResponse> presidentialResults = results.get("President");
+
+        assertEquals("Precious", presidentialResults.get(0).getFirstName());
+        assertEquals("John", presidentialResults.get(1).getFirstName());
+    }
+
+    @Test
+    public void getResultsByPosition_shouldReturnsOnlyThatPosition_Test() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+
+        CandidateRequest candidateJane = new CandidateRequest();
+        candidateJane.setFirstName("Jane");
+        candidateJane.setLastName("Doe");
+        candidateJane.setPosition("Governor");
+        candidateService.createCandidate(candidateJane);
+
+        List<CandidateResponse> presidentialResults = candidateService.getResultsByPosition("president");
+
+        assertEquals(2, presidentialResults.size());
+        for (CandidateResponse candidate : presidentialResults) {
+            assertEquals("President", candidate.getPosition());
+        }
+    }
+
+    @Test
+    public void getResultsByPosition_candidatesAreOrderedByVoteCount_Test() {
+        String preciousId = candidateService.createCandidate(candidatePrecious).getId();
+        String johnId = candidateService.createCandidate(candidateJohn).getId();
+
+        Candidate candidate = candidateRepository.findById(preciousId).get();
+        candidate.setVoteCount(2);
+        candidateRepository.save(candidate);
+
+        candidate = candidateRepository.findById(johnId).get();
+        candidate.setVoteCount(5);
+        candidateRepository.save(candidate);
+
+        List<CandidateResponse> results = candidateService.getResultsByPosition("President");
+
+        assertEquals("John", results.get(0).getFirstName());
+        assertEquals("Precious", results.get(1).getFirstName());
+    }
+
+    @Test
+    public void getResultsByPosition_isEmptyForUnknownPosition_Test() {
+        candidateService.createCandidate(candidatePrecious);
+
+        List<CandidateResponse> results = candidateService.getResultsByPosition("Senator");
+        assertTrue(results.isEmpty());
+    }
+
 }
 

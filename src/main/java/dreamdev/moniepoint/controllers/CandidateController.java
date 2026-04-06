@@ -55,5 +55,23 @@ public class CandidateController {
             return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/results")
+    public ResponseEntity<?> getResults() {
+        try {
+            return new ResponseEntity<>(new ApiResponse(true, candidateService.getResults()), HttpStatus.OK);
+        } catch (ElectionAppException e) {
+            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @GetMapping("/results/{position}")
+    public ResponseEntity<?> getResultsByPosition(@PathVariable("position") String position) {
+        try {
+            return new ResponseEntity<>(new ApiResponse(true, candidateService.getResultsByPosition(position)), HttpStatus.OK);
+        } catch (ElectionAppException e) {
+            return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
+        }
+    }
 }
 
