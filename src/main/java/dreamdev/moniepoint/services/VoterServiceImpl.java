@@ -1,17 +1,19 @@
 package dreamdev.moniepoint.services;
 
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.models.Voter;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.data.repositories.ElectionRepository;
+import dreamdev.moniepoint.data.repositories.PositionRepository;
 import dreamdev.moniepoint.data.repositories.VoterRepository;
 import dreamdev.moniepoint.dtos.requests.VoteRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.VoteResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
-import dreamdev.moniepoint.exceptions.AlreadyVotedException;
-import dreamdev.moniepoint.exceptions.DuplicateVoterException;
-import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
-import dreamdev.moniepoint.exceptions.InvalidVoterException;
+import dreamdev.moniepoint.exceptions.*;
+import dreamdev.moniepoint.utils.ElectionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +30,12 @@ public class VoterServiceImpl implements VoterService {
 
     @Autowired
     private CandidateRepository candidateRepository;
+
+    @Autowired
+    private PositionRepository positionRepository;
+
+    @Autowired
+    private ElectionRepository electionRepository;
 
     @Override
     public VoterResponse registerVoter(VoterRequest voterRequest) {
@@ -59,21 +67,36 @@ public class VoterServiceImpl implements VoterService {
         Optional<Voter> optionalVoter = voterRepository.findByNin(voteRequest.getNin());
         if (optionalVoter.isEmpty()) throw new InvalidVoterException("Voter with NIN " + voteRequest.getNin() + " is not registered");
         Voter voter = optionalVoter.get();
-        if (voter.getVotedPositions().contains(voteRequest.getCandidatePosition())) {
-            throw new AlreadyVotedException("You have already voted for " + voteRequest.getCandidatePosition() + " position");
+        if (voter.getVotedPositions().contains(voteRequest.getPositionId())) {
+            throw new AlreadyVotedException("You have already voted for this position");
+        }
+
+        Optional<Position> optionalPosition = positionRepository.findById(voteRequest.getPositionId());
+        if (optionalPosition.isEmpty()) throw new InvalidPositionException("Position not found");
+        Position position = optionalPosition.get();
+
+        Optional<Election> optionalElection = electionRepository.findById(position.getElectionId());
+        if (optionalElection.isEmpty()) throw new InvalidElectionException("Election not found");
+
+        Election election = optionalElection.get();
+        if (ElectionStatus.isUpcoming(election)) {
+            throw new ElectionNotActiveException("Election has not started yet");
+        }
+        if (ElectionStatus.isEnded(election)) {
+            throw new ElectionNotActiveException("Election has already ended");
         }
 
         Optional<Candidate> optionalCandidate = candidateRepository.findById(voteRequest.getCandidateId());
         if (optionalCandidate.isEmpty()) throw new InvalidCandidateIdException("Candidate not found");
         Candidate candidate = optionalCandidate.get();
-        if (!candidate.getPosition().equals(voteRequest.getCandidatePosition())) {
-            throw new InvalidCandidateIdException("Candidate is not running for position: " + voteRequest.getCandidatePosition());
+        if (!candidate.getPositionId().equals(voteRequest.getPositionId())) {
+            throw new InvalidCandidateIdException("Candidate is not running for position");
         }
 
         candidate.setVoteCount(candidate.getVoteCount() + 1);
         candidateRepository.save(candidate);
 
-        voter.getVotedPositions().add(voteRequest.getCandidatePosition());
+        voter.getVotedPositions().add(voteRequest.getPositionId());
         voterRepository.save(voter);
 
         return map(voter, candidate.getFirstName() + " " + candidate.getLastName());

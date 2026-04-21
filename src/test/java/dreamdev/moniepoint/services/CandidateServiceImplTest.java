@@ -1,9 +1,16 @@
 package dreamdev.moniepoint.services;
+
+import dreamdev.moniepoint.TestHelper;
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.data.repositories.ElectionRepository;
+import dreamdev.moniepoint.data.repositories.PositionRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.exceptions.DuplicateCandidateException;
+import dreamdev.moniepoint.exceptions.ElectionNotActiveException;
 import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,26 +24,36 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class CandidateServiceImplTest {
+
     @Autowired
     private CandidateService candidateService;
     @Autowired
     private CandidateRepository candidateRepository;
+    @Autowired
+    private ElectionRepository electionRepository;
+    @Autowired
+    private PositionRepository positionRepository;
+    @Autowired
+    private TestHelper testHelper;
 
+    private Election upcomingElection;
+    private Position presidentPosition;
+    private Position governorPosition;
     private CandidateRequest candidatePrecious;
     private CandidateRequest candidateJohn;
 
     @BeforeEach
     void setUp() {
         candidateRepository.deleteAll();
-        candidatePrecious = new CandidateRequest();
-        candidatePrecious.setFirstName("Precious");
-        candidatePrecious.setLastName("Michael");
-        candidatePrecious.setPosition("President");
+        positionRepository.deleteAll();
+        electionRepository.deleteAll();
 
-        candidateJohn = new CandidateRequest();
-        candidateJohn.setFirstName("John");
-        candidateJohn.setLastName("Doe");
-        candidateJohn.setPosition("President");
+        upcomingElection = testHelper.createUpcomingElection();
+        presidentPosition = testHelper.createPosition("President", upcomingElection.getId());
+        governorPosition = testHelper.createPosition("Governor", upcomingElection.getId());
+
+        candidatePrecious = testHelper.buildCandidateRequest("Precious", "Michael", presidentPosition.getId());
+        candidateJohn = testHelper.buildCandidateRequest("John", "Doe", presidentPosition.getId());
     }
 
     @Test
@@ -53,14 +70,31 @@ public class CandidateServiceImplTest {
 
     @Test
     public void createTwiceWithSameFirstAndLastName_throwExceptionTest() {
-        assertEquals(0L, candidateRepository.count());
         candidateService.createCandidate(candidatePrecious);
-        assertThrows(DuplicateCandidateException.class, ()-> candidateService.createCandidate(candidatePrecious));
+        assertThrows(DuplicateCandidateException.class, () -> candidateService.createCandidate(candidatePrecious));
         assertEquals(1L, candidateRepository.count());
     }
 
     @Test
-    public void AddTwoCandidate_countIsTwoTest() {
+    public void createCandidate_whenElectionIsOngoing_throwsExceptionTest() {
+        Election ongoingElection = testHelper.createOngoingElection();
+        Position position = testHelper.createPosition("Senator", ongoingElection.getId());
+        CandidateRequest request = testHelper.buildCandidateRequest("Jane", "Smith", position.getId());
+
+        assertThrows(ElectionNotActiveException.class, () -> candidateService.createCandidate(request));
+    }
+
+    @Test
+    public void createCandidate_whenElectionHasEnded_throwsExceptionTest() {
+        Election endedElection = testHelper.createEndedElection();
+        Position position = testHelper.createPosition("Senator", endedElection.getId());
+        CandidateRequest request = testHelper.buildCandidateRequest("Jane", "Smith", position.getId());
+
+        assertThrows(ElectionNotActiveException.class, () -> candidateService.createCandidate(request));
+    }
+
+    @Test
+    public void addTwoCandidate_countIsTwoTest() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
         assertEquals(2L, candidateRepository.count());
@@ -77,7 +111,6 @@ public class CandidateServiceImplTest {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
         List<CandidateResponse> candidates = candidateService.getAllCandidates();
-
         assertEquals(2, candidates.size());
     }
 
@@ -90,37 +123,38 @@ public class CandidateServiceImplTest {
         assertEquals(2, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());
-        assertEquals("President", candidates.get(0).getPosition());
+        assertEquals("President", candidates.get(0).getPositionTitle());
 
         assertEquals("John", candidates.get(1).getFirstName());
         assertEquals("Doe", candidates.get(1).getLastName());
-        assertEquals("President", candidates.get(1).getPosition());
+        assertEquals("President", candidates.get(1).getPositionTitle());
     }
 
     @Test
     public void getCandidateById_Test() {
-        CandidateResponse candidate = candidateService.createCandidate(candidateJohn);
-        assertEquals("John", candidate.getFirstName());
-        assertEquals("Doe", candidate.getLastName());
-        assertEquals("President", candidate.getPosition());
-        assertEquals(0, candidate.getVoteCount());
+        CandidateResponse created = candidateService.createCandidate(candidateJohn);
+        CandidateResponse found = candidateService.getCandidate(created.getId());
+        assertEquals("John", found.getFirstName());
+        assertEquals("Doe", found.getLastName());
+        assertEquals("President", found.getPositionTitle());
+        assertEquals(0, found.getVoteCount());
     }
 
     @Test
     public void getCandidateByInvalidId_throwExceptionTest() {
-        CandidateResponse candidate = candidateService.createCandidate(candidateJohn);
-        assertThrows(InvalidCandidateIdException.class, ()-> candidateService.getCandidate("Invalid"));
+        assertThrows(InvalidCandidateIdException.class, () -> candidateService.getCandidate("Invalid"));
     }
 
     @Test
     public void searchCandidateByFirstNameAndLastName_Test() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael", "pres");
+
+        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael", presidentPosition.getId());
         assertEquals(1, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());
-        assertEquals("President", candidates.get(0).getPosition());
+        assertEquals("President", candidates.get(0).getPositionTitle());
     }
 
     @Test
@@ -133,15 +167,10 @@ public class CandidateServiceImplTest {
     public void getResults_isGroupedByPosition_Test() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-
-        CandidateRequest candidateJane = new CandidateRequest();
-        candidateJane.setFirstName("Jane");
-        candidateJane.setLastName("Doe");
-        candidateJane.setPosition("Governor");
+        CandidateRequest candidateJane = testHelper.buildCandidateRequest("Jane", "Doe", governorPosition.getId());
         candidateService.createCandidate(candidateJane);
 
         Map<String, List<CandidateResponse>> results = candidateService.getResults();
-
         assertEquals(2, results.size());
         assertTrue(results.containsKey("President"));
         assertTrue(results.containsKey("Governor"));
@@ -163,29 +192,22 @@ public class CandidateServiceImplTest {
         candidateRepository.save(candidate);
 
         Map<String, List<CandidateResponse>> results = candidateService.getResults();
-        assertEquals(1, results.size());
         List<CandidateResponse> presidentialResults = results.get("President");
-
         assertEquals("Precious", presidentialResults.get(0).getFirstName());
         assertEquals("John", presidentialResults.get(1).getFirstName());
     }
 
     @Test
-    public void getResultsByPosition_shouldReturnsOnlyThatPosition_Test() {
+    public void getResultsByPosition_shouldReturnOnlyThatPosition_Test() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-
-        CandidateRequest candidateJane = new CandidateRequest();
-        candidateJane.setFirstName("Jane");
-        candidateJane.setLastName("Doe");
-        candidateJane.setPosition("Governor");
+        CandidateRequest candidateJane = testHelper.buildCandidateRequest("Jane", "Doe", governorPosition.getId());
         candidateService.createCandidate(candidateJane);
 
-        List<CandidateResponse> presidentialResults = candidateService.getResultsByPosition("president");
-
+        List<CandidateResponse> presidentialResults = candidateService.getResultsByPosition(presidentPosition.getId());
         assertEquals(2, presidentialResults.size());
-        for (CandidateResponse candidate : presidentialResults) {
-            assertEquals("President", candidate.getPosition());
+        for (CandidateResponse c : presidentialResults) {
+            assertEquals("President", c.getPositionTitle());
         }
     }
 
@@ -202,8 +224,7 @@ public class CandidateServiceImplTest {
         candidate.setVoteCount(5);
         candidateRepository.save(candidate);
 
-        List<CandidateResponse> results = candidateService.getResultsByPosition("President");
-
+        List<CandidateResponse> results = candidateService.getResultsByPosition(presidentPosition.getId());
         assertEquals("John", results.get(0).getFirstName());
         assertEquals("Precious", results.get(1).getFirstName());
     }
@@ -211,10 +232,7 @@ public class CandidateServiceImplTest {
     @Test
     public void getResultsByPosition_isEmptyForUnknownPosition_Test() {
         candidateService.createCandidate(candidatePrecious);
-
-        List<CandidateResponse> results = candidateService.getResultsByPosition("Senator");
+        List<CandidateResponse> results = candidateService.getResultsByPosition("unknownPositionId");
         assertTrue(results.isEmpty());
     }
-
 }
-

@@ -4,14 +4,17 @@ import lombok.Data;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Document
 public class Election {
     @Id
     private String id;
-    private String name;
-    private Date startDate;
-    private Date endDate;
+    private String title;
+    private LocalDateTime startDateTime;
+    private LocalDateTime endDateTime;
+    private List<String> positionIds = new ArrayList<>();
 }

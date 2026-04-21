@@ -1,19 +1,21 @@
 package dreamdev.moniepoint.utils;
 
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.models.Voter;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
+import dreamdev.moniepoint.dtos.requests.ElectionRequest;
+import dreamdev.moniepoint.dtos.requests.PositionRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
-import dreamdev.moniepoint.dtos.responses.CandidateResponse;
-import dreamdev.moniepoint.dtos.responses.VoteResponse;
-import dreamdev.moniepoint.dtos.responses.VoterResponse;
+import dreamdev.moniepoint.dtos.responses.*;
 
 public class Mapper {
     public static Candidate map(CandidateRequest candidateRequest) {
         Candidate candidate = new Candidate();
         candidate.setFirstName(candidateRequest.getFirstName());
         candidate.setLastName(candidateRequest.getLastName());
-        candidate.setPosition(candidateRequest.getPosition());
+        candidate.setPositionId(candidateRequest.getPositionId());
         return candidate;
     }
 
@@ -22,7 +24,18 @@ public class Mapper {
         candidateResponse.setId(candidate.getId());
         candidateResponse.setFirstName(candidate.getFirstName());
         candidateResponse.setLastName(candidate.getLastName());
-        candidateResponse.setPosition(candidate.getPosition());
+        candidateResponse.setPositionId(candidate.getPositionId());
+        candidateResponse.setVoteCount(candidate.getVoteCount());
+        return candidateResponse;
+    }
+
+    public static CandidateResponse map(Candidate candidate, Position position) {
+        CandidateResponse candidateResponse = new CandidateResponse();
+        candidateResponse.setId(candidate.getId());
+        candidateResponse.setFirstName(candidate.getFirstName());
+        candidateResponse.setLastName(candidate.getLastName());
+        candidateResponse.setPositionId(candidate.getPositionId());
+        candidateResponse.setPositionTitle(position.getTitle());
         candidateResponse.setVoteCount(candidate.getVoteCount());
         return candidateResponse;
     }
@@ -48,6 +61,38 @@ public class Mapper {
         response.setName(voter.getName());
         response.setVotedPositions(voter.getVotedPositions());
         response.setCandidateName(candidateName);
+        return response;
+    }
+
+    public static Election map(ElectionRequest electionRequest) {
+        Election election = new Election();
+        election.setTitle(electionRequest.getTitle());
+        return election;
+    }
+
+    public static ElectionResponse map(Election election) {
+        ElectionResponse response = new ElectionResponse();
+        response.setId(election.getId());
+        response.setTitle(election.getTitle());
+        response.setStartDateTime(election.getStartDateTime());
+        response.setEndDateTime(election.getEndDateTime());
+        response.setStatus(ElectionStatus.getStatus(election));
+        response.setPositionIds(election.getPositionIds());
+        return response;
+    }
+
+    public static Position map(PositionRequest positionRequest) {
+        Position position = new Position();
+        position.setTitle(positionRequest.getTitle());
+        position.setElectionId(positionRequest.getElectionId());
+        return position;
+    }
+
+    public static PositionResponse map(Position position) {
+        PositionResponse response = new PositionResponse();
+        response.setId(position.getId());
+        response.setTitle(position.getTitle());
+        response.setElectionId(position.getElectionId());
         return response;
     }
 }

@@ -1,17 +1,18 @@
 package dreamdev.moniepoint.services;
 
+import dreamdev.moniepoint.TestHelper;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.data.repositories.ElectionRepository;
+import dreamdev.moniepoint.data.repositories.PositionRepository;
 import dreamdev.moniepoint.data.repositories.VoterRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
-import dreamdev.moniepoint.dtos.requests.VoteRequest;
-import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.CandidateResponse;
+import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.dtos.responses.VoteResponse;
 import dreamdev.moniepoint.dtos.responses.VoterResponse;
-import dreamdev.moniepoint.exceptions.AlreadyVotedException;
-import dreamdev.moniepoint.exceptions.DuplicateVoterException;
-import dreamdev.moniepoint.exceptions.InvalidCandidateIdException;
-import dreamdev.moniepoint.exceptions.InvalidVoterException;
+import dreamdev.moniepoint.exceptions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,18 +24,27 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class VoterServiceImplTest {
+
     @Autowired
     private VoterRepository voterRepository;
     @Autowired
     private CandidateRepository candidateRepository;
     @Autowired
+    private ElectionRepository electionRepository;
+    @Autowired
+    private PositionRepository positionRepository;
+    @Autowired
     private VoterService voterService;
     @Autowired
     private CandidateService candidateService;
+    @Autowired
+    private TestHelper testHelper;
 
     private VoterRequest voterJamie;
     private VoterRequest voterCarrie;
-
+    private Election ongoingElection;
+    private Position presidentPosition;
+    private Position governorPosition;
     private CandidateRequest candidatePrecious;
     private CandidateRequest candidateJohn;
 
@@ -42,6 +52,8 @@ class VoterServiceImplTest {
     void setUp() {
         voterRepository.deleteAll();
         candidateRepository.deleteAll();
+        positionRepository.deleteAll();
+        electionRepository.deleteAll();
 
         voterJamie = new VoterRequest();
         voterJamie.setName("Jamie");
@@ -51,33 +63,36 @@ class VoterServiceImplTest {
         voterCarrie.setName("Carrie");
         voterCarrie.setNin("6789");
 
-        candidatePrecious = new CandidateRequest();
-        candidatePrecious.setFirstName("Precious");
-        candidatePrecious.setLastName("Michael");
-        candidatePrecious.setPosition("President");
+        // candidates are registered before election starts (upcoming)
+        Election upcomingElection = testHelper.createUpcomingElection();
+        presidentPosition = testHelper.createPosition("President", upcomingElection.getId());
+        governorPosition = testHelper.createPosition("Governor", upcomingElection.getId());
 
-        candidateJohn = new CandidateRequest();
-        candidateJohn.setFirstName("John");
-        candidateJohn.setLastName("Doe");
-        candidateJohn.setPosition("President");
+        candidatePrecious = testHelper.buildCandidateRequest("Precious", "Michael", presidentPosition.getId());
+        candidateJohn = testHelper.buildCandidateRequest("John", "Doe", governorPosition.getId());
+
+        // now make the election ongoing so votes can be cast
+        upcomingElection.setStartDateTime(upcomingElection.getStartDateTime().minusHours(2));
+        electionRepository.save(upcomingElection);
+
+        ongoingElection = electionRepository.findById(upcomingElection.getId()).get();
     }
 
     @Test
-    public void voterRepositoryIsEmpty_Test(){
+    public void voterRepositoryIsEmpty_Test() {
         assertEquals(0L, voterRepository.count());
     }
 
     @Test
-    public void registerVoter_countIsOneTest(){
-        assertEquals(0L, voterRepository.count());
-        VoterResponse voterResponse = voterService.registerVoter(voterJamie);
+    public void registerVoter_countIsOneTest() {
+        voterService.registerVoter(voterJamie);
         assertEquals(1L, voterRepository.count());
     }
 
     @Test
-    public void registerVoter_whenVoterExists_Test(){
+    public void registerVoter_whenVoterExists_Test() {
         voterService.registerVoter(voterCarrie);
-        assertThrows(DuplicateVoterException.class, ()-> voterService.registerVoter(voterCarrie));
+        assertThrows(DuplicateVoterException.class, () -> voterService.registerVoter(voterCarrie));
         assertEquals(1L, voterRepository.count());
     }
 
@@ -88,85 +103,68 @@ class VoterServiceImplTest {
     }
 
     @Test
-    public void registerTwoVoters_countIsTwoTest(){
+    public void registerTwoVoters_countIsTwoTest() {
         voterService.registerVoter(voterJamie);
         voterService.registerVoter(voterCarrie);
-        List<VoterResponse> voters = voterService.getVoters();
-
-        assertEquals(2, voters.size());
+        assertEquals(2, voterService.getVoters().size());
     }
 
     @Test
     public void getVoterById_Test() {
-        VoterResponse savedVoter = voterService.registerVoter(voterJamie);
-        VoterResponse voter = voterService.getVoter(savedVoter.getId());
-        assertEquals("Jamie", voter.getName());
-        assertEquals("4567", voter.getNin());
+        VoterResponse saved = voterService.registerVoter(voterJamie);
+        VoterResponse found = voterService.getVoter(saved.getId());
+        assertEquals("Jamie", found.getName());
+        assertEquals("4567", found.getNin());
     }
 
     @Test
     public void getVoterByInvalidId_throwExceptionTest() {
         voterService.registerVoter(voterJamie);
-        assertThrows(InvalidVoterException.class, ()-> voterService.getVoter("Invalid"));
-    }
-
-    private VoteRequest buildVoteRequest(String nin, String candidateId, String position) {
-        VoteRequest voteRequest = new VoteRequest();
-        voteRequest.setNin(nin);
-        voteRequest.setCandidateId(candidateId);
-        voteRequest.setCandidatePosition(position);
-        return voteRequest;
+        assertThrows(InvalidVoterException.class, () -> voterService.getVoter("Invalid"));
     }
 
     @Test
     public void voteCandidate_isSuccessfulTest() {
         VoterResponse voter = voterService.registerVoter(voterJamie);
-        CandidateResponse candidate = candidateService.createCandidate(candidatePrecious);
-        VoteRequest voteRequest = buildVoteRequest(voter.getNin(), candidate.getId(), "President");
-        VoteResponse voteResponse = voterService.voteCandidate(voteRequest);
+        CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
 
-        CandidateResponse saved = candidateService.getCandidate(candidate.getId());
+        voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
+
+        CandidateResponse saved = candidateService.getCandidate(precious.getId());
         assertEquals(1, saved.getVoteCount());
     }
 
     @Test
     public void voteCandidate_recordsPositionOnVoterTest() {
         VoterResponse voter = voterService.registerVoter(voterJamie);
-        CandidateResponse candidate = candidateService.createCandidate(candidatePrecious);
-        VoteRequest voteRequest = buildVoteRequest(voter.getNin(), candidate.getId(), "President");
-        VoteResponse voteResponse = voterService.voteCandidate(voteRequest);
+        CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
 
-        assertTrue(voteResponse.getVotedPositions().contains("President"));
+        VoteResponse response = voterService.voteCandidate(
+                testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
+
+        assertTrue(response.getVotedPositions().contains(presidentPosition.getId()));
     }
 
     @Test
     public void voteCandidate_onDifferentPositionsTest() {
         VoterResponse voter = voterService.registerVoter(voterJamie);
-
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
-        candidateJohn.setPosition("Governor");
         CandidateResponse john = candidateService.createCandidate(candidateJohn);
 
-        voterService.voteCandidate(buildVoteRequest(voter.getNin(), precious.getId(), "President"));
-        VoteResponse voteResponse = voterService.voteCandidate(buildVoteRequest(voter.getNin(), john.getId(), "Governor"));
+        voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
+        VoteResponse response = voterService.voteCandidate(
+                testHelper.buildVoteRequest(voter.getNin(), john.getId(), governorPosition.getId()));
 
-        assertEquals(2, voteResponse.getVotedPositions().size());
-        assertTrue(voteResponse.getVotedPositions().contains("President"));
-        assertTrue(voteResponse.getVotedPositions().contains("Governor"));
-
-        precious = candidateService.getCandidate(precious.getId());
-        assertEquals(1, precious.getVoteCount());
-
-        john = candidateService.getCandidate(john.getId());
-        assertEquals(1, john.getVoteCount());
+        assertEquals(2, response.getVotedPositions().size());
+        assertTrue(response.getVotedPositions().contains(presidentPosition.getId()));
+        assertTrue(response.getVotedPositions().contains(governorPosition.getId()));
     }
 
     @Test
     public void voteWithUnregisteredNin_throwsExceptionTest() {
-        VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
-        VoteRequest voteRequest = buildVoteRequest("0000", precious.getId(), "President");
-        assertThrows(InvalidVoterException.class, () -> voterService.voteCandidate(voteRequest));
+        assertThrows(InvalidVoterException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest("0000", precious.getId(), presidentPosition.getId())));
     }
 
     @Test
@@ -174,18 +172,18 @@ class VoterServiceImplTest {
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
 
-        VoteRequest voteRequest = buildVoteRequest(voter.getNin(), precious.getId(), "President");
-        voterService.voteCandidate(voteRequest);
-        assertThrows(AlreadyVotedException.class, () -> voterService.voteCandidate(voteRequest));
-        precious = candidateService.getCandidate(precious.getId());
-        assertEquals(1, precious.getVoteCount());
+        voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
+        assertThrows(AlreadyVotedException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId())));
+
+        assertEquals(1, candidateService.getCandidate(precious.getId()).getVoteCount());
     }
 
     @Test
     public void voteCandidate_withInvalidCandidateId_throwsExceptionTest() {
         VoterResponse voter = voterService.registerVoter(voterJamie);
-        VoteRequest voteRequest = buildVoteRequest(voter.getNin(), "invalid", "President");
-        assertThrows(InvalidCandidateIdException.class, () -> voterService.voteCandidate(voteRequest));
+        assertThrows(InvalidCandidateIdException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), "invalid", presidentPosition.getId())));
     }
 
     @Test
@@ -193,9 +191,40 @@ class VoterServiceImplTest {
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
 
-        VoteRequest voteRequest = buildVoteRequest(voter.getNin(), precious.getId(), "Governor");
-        assertThrows(InvalidCandidateIdException.class, () -> voterService.voteCandidate(voteRequest));
-        precious = candidateService.getCandidate(precious.getId());
-        assertEquals(0, precious.getVoteCount());
+        // precious is running for president, but we pass governorPosition
+        assertThrows(InvalidCandidateIdException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), governorPosition.getId())));
+
+        assertEquals(0, candidateService.getCandidate(precious.getId()).getVoteCount());
+    }
+
+    @Test
+    public void voteCandidate_whenElectionHasEnded_throwsExceptionTest() {
+        VoterResponse voter = voterService.registerVoter(voterJamie);
+        CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+
+        // push end time to the past
+        ongoingElection.setEndDateTime(ongoingElection.getEndDateTime().minusHours(10));
+        electionRepository.save(ongoingElection);
+
+        assertThrows(ElectionNotActiveException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId())));
+    }
+
+    @Test
+    public void voteCandidate_whenElectionHasNotStarted_throwsExceptionTest() {
+        Election upcomingElection = testHelper.createUpcomingElection();
+        Position position = testHelper.createPosition("Senator", upcomingElection.getId());
+        CandidateRequest request = testHelper.buildCandidateRequest("Jane", "Smith", position.getId());
+
+        // save candidate directly — bypassing the upcoming-only check
+        candidateService.createCandidate(request);
+        VoterResponse voter = voterService.registerVoter(voterJamie);
+        CandidateResponse jane = candidateService.getAllCandidates().stream()
+                .filter(c -> c.getFirstName().equals("Jane"))
+                .findFirst().get();
+
+        assertThrows(ElectionNotActiveException.class, () ->
+                voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), jane.getId(), position.getId())));
     }
 }

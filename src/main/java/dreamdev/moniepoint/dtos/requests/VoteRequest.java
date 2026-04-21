@@ -6,5 +6,5 @@ import lombok.Data;
 public class VoteRequest {
     private String nin;
     private String candidateId;
-    private String candidatePosition;
+    private String positionId;
 }

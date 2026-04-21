@@ -7,5 +7,5 @@ public class CandidateRequest {
     private String id;
     private String firstName;
     private String lastName;
-    private String position;
+    private String positionId;
 }

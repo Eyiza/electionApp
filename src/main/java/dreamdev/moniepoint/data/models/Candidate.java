@@ -11,6 +11,6 @@ public class Candidate {
     private String id;
     private String firstName;
     private String lastName;
-    private String position;
+    private String positionId;
     private int voteCount = 0;
 }
