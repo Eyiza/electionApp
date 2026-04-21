@@ -22,8 +22,8 @@ public class ElectionServiceImpl implements ElectionService {
 
     @Override
     public ElectionResponse createElection(ElectionRequest electionRequest) {
-        LocalDateTime startDateTime = electionRequest.getEndDateTime();
-        LocalDateTime endDateTime = electionRequest.getStartDateTime();
+        LocalDateTime startDateTime = electionRequest.getStartDateTime();
+        LocalDateTime endDateTime = electionRequest.getEndDateTime();
         if (endDateTime.isBefore(startDateTime)) {
             throw new InvalidElectionException("End date must be after start date");
         }

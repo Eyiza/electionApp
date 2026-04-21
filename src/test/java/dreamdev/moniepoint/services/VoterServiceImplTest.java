@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -125,8 +126,16 @@ class VoterServiceImplTest {
 
     @Test
     public void voteCandidate_isSuccessfulTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
 
         voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
 
@@ -136,8 +145,16 @@ class VoterServiceImplTest {
 
     @Test
     public void voteCandidate_recordsPositionOnVoterTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
 
         VoteResponse response = voterService.voteCandidate(
                 testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
@@ -147,9 +164,17 @@ class VoterServiceImplTest {
 
     @Test
     public void voteCandidate_onDifferentPositionsTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
         CandidateResponse john = candidateService.createCandidate(candidateJohn);
+
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
 
         voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
         VoteResponse response = voterService.voteCandidate(
@@ -162,15 +187,31 @@ class VoterServiceImplTest {
 
     @Test
     public void voteWithUnregisteredNin_throwsExceptionTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
+
         assertThrows(InvalidVoterException.class, () ->
                 voterService.voteCandidate(testHelper.buildVoteRequest("0000", precious.getId(), presidentPosition.getId())));
     }
 
     @Test
     public void voteCandidate_whenVoterAlreadyVotedForPosition_throwsExceptionTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
 
         voterService.voteCandidate(testHelper.buildVoteRequest(voter.getNin(), precious.getId(), presidentPosition.getId()));
         assertThrows(AlreadyVotedException.class, () ->
@@ -188,8 +229,16 @@ class VoterServiceImplTest {
 
     @Test
     public void voteCandidate_whenPositionIsWrong_throwsExceptionTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
+
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
 
         // precious is running for president, but we pass governorPosition
         assertThrows(InvalidCandidateIdException.class, () ->
@@ -200,6 +249,10 @@ class VoterServiceImplTest {
 
     @Test
     public void voteCandidate_whenElectionHasEnded_throwsExceptionTest() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+
         VoterResponse voter = voterService.registerVoter(voterJamie);
         CandidateResponse precious = candidateService.createCandidate(candidatePrecious);
 

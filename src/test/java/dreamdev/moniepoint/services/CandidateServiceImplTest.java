@@ -150,10 +150,11 @@ public class CandidateServiceImplTest {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
 
-        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael", presidentPosition.getId());
+        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael");
         assertEquals(1, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());
+        System.out.print(candidates.get(0));
         assertEquals("President", candidates.get(0).getPositionTitle());
     }
 

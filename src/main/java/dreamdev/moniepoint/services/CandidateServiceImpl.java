@@ -83,11 +83,12 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public List<CandidateResponse> searchCandidates(String firstName, String lastName, String position) {
-        List<Candidate> candidates = candidateRepository.searchByFields(firstName, lastName, position);
+    public List<CandidateResponse> searchCandidates(String firstName, String lastName) {
+        List<Candidate> candidates = candidateRepository.searchByFields(firstName, lastName);
         List<CandidateResponse> candidateResponses = new ArrayList<>();
         for (Candidate candidate : candidates) {
-            candidateResponses.add(map(candidate));
+            Position position = positionRepository.findById(candidate.getPositionId()).get();
+            candidateResponses.add(map(candidate, position));
         }
         return candidateResponses;
     }

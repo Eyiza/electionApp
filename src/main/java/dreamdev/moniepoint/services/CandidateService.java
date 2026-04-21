@@ -10,7 +10,7 @@ public interface CandidateService {
     CandidateResponse createCandidate(CandidateRequest candidateRequest);
     List<CandidateResponse> getAllCandidates();
     CandidateResponse getCandidate(String id);
-    List<CandidateResponse> searchCandidates(String firstName, String lastName, String position);
+    List<CandidateResponse> searchCandidates(String firstName, String lastName);
     Map<String, List<CandidateResponse>> getResults();
     List<CandidateResponse> getResultsByPosition(String position);
 }

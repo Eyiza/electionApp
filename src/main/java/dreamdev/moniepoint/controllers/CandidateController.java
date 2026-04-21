@@ -48,7 +48,7 @@ public class CandidateController {
             @RequestParam(value = "position", required = false, defaultValue = "") String position) {
         try {
             return new ResponseEntity<>(
-                    new ApiResponse(true, candidateService.searchCandidates(firstName, lastName, position)),
+                    new ApiResponse(true, candidateService.searchCandidates(firstName, lastName)),
                     HttpStatus.OK
             );
         } catch (ElectionAppException e) {

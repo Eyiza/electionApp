@@ -67,6 +67,8 @@ public class Mapper {
     public static Election map(ElectionRequest electionRequest) {
         Election election = new Election();
         election.setTitle(electionRequest.getTitle());
+        election.setStartDateTime(electionRequest.getStartDateTime());
+        election.setEndDateTime(electionRequest.getEndDateTime());
         return election;
     }
 
