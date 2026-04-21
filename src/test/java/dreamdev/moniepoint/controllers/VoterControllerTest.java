@@ -1,9 +1,13 @@
 package dreamdev.moniepoint.controllers;
 
+import dreamdev.moniepoint.TestHelper;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.data.repositories.ElectionRepository;
+import dreamdev.moniepoint.data.repositories.PositionRepository;
 import dreamdev.moniepoint.data.repositories.VoterRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
-import dreamdev.moniepoint.dtos.requests.VoteRequest;
 import dreamdev.moniepoint.dtos.requests.VoterRequest;
 import dreamdev.moniepoint.services.CandidateService;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,8 +37,20 @@ class VoterControllerTest {
     private CandidateRepository candidateRepository;
 
     @Autowired
+    private ElectionRepository electionRepository;
+
+    @Autowired
+    private PositionRepository positionRepository;
+
+    @Autowired
     private CandidateService candidateService;
 
+    @Autowired
+    private TestHelper testHelper;
+
+    private Election ongoingElection;
+    private Position presidentPosition;
+    private Position governorPosition;
     private VoterRequest voterJamie;
     private VoterRequest voterCarrie;
     private CandidateRequest candidatePrecious;
@@ -50,6 +66,8 @@ class VoterControllerTest {
     void setUp() {
         voterRepository.deleteAll();
         candidateRepository.deleteAll();
+        positionRepository.deleteAll();
+        electionRepository.deleteAll();
 
         voterJamie = new VoterRequest();
         voterJamie.setName("Jamie");
@@ -59,23 +77,19 @@ class VoterControllerTest {
         voterCarrie.setName("Carrie");
         voterCarrie.setNin("6789");
 
-        candidatePrecious = new CandidateRequest();
-        candidatePrecious.setFirstName("Precious");
-        candidatePrecious.setLastName("Michael");
-        candidatePrecious.setPosition("President");
+        // register candidates while election is upcoming
+        Election upcomingElection = testHelper.createUpcomingElection();
+        presidentPosition = testHelper.createPosition("President", upcomingElection.getId());
+        governorPosition = testHelper.createPosition("Governor", upcomingElection.getId());
 
-        candidateJohn = new CandidateRequest();
-        candidateJohn.setFirstName("John");
-        candidateJohn.setLastName("Doe");
-        candidateJohn.setPosition("Governor");
-    }
+        candidatePrecious = testHelper.buildCandidateRequest("Precious", "Michael", presidentPosition.getId());
+        candidateJohn = testHelper.buildCandidateRequest("John", "Doe", governorPosition.getId());
 
-    private VoteRequest buildVoteRequest(String nin, String candidateId, String position) {
-        VoteRequest voteRequest = new VoteRequest();
-        voteRequest.setNin(nin);
-        voteRequest.setCandidateId(candidateId);
-        voteRequest.setCandidatePosition(position);
-        return voteRequest;
+        // push start time back so election is now ongoing
+        upcomingElection.setStartDateTime(upcomingElection.getStartDateTime().minusHours(2));
+        electionRepository.save(upcomingElection);
+
+        ongoingElection = electionRepository.findById(upcomingElection.getId()).get();
     }
 
     @Test
@@ -85,8 +99,7 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated()
+                .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.name").isEqualTo("Jamie")
@@ -102,15 +115,13 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
@@ -121,8 +132,7 @@ class VoterControllerTest {
         restTestClient.get()
                 .uri(url("/voters"))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.length()").isEqualTo(0);
@@ -135,21 +145,18 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterCarrie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         restTestClient.get()
                 .uri(url("/voters"))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.length()").isEqualTo(2);
@@ -162,8 +169,7 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated()
+                .expectStatus().isCreated()
                 .expectBody(String.class)
                 .returnResult()
                 .getResponseBody();
@@ -176,8 +182,7 @@ class VoterControllerTest {
         restTestClient.get()
                 .uri(url("/voter/" + id))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.name").isEqualTo("Jamie")
@@ -190,8 +195,7 @@ class VoterControllerTest {
         restTestClient.get()
                 .uri(url("/voter/nonexistentid123"))
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
@@ -203,17 +207,15 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", candidateId, "President"))
+                .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.name").isEqualTo("Jamie")
@@ -228,25 +230,22 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         String presidentialCandidateId = candidateService.createCandidate(candidatePrecious).getId();
         String governorCandidateId = candidateService.createCandidate(candidateJohn).getId();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", presidentialCandidateId, "President"))
+                .body(testHelper.buildVoteRequest("4567", presidentialCandidateId, presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isOk();
+                .expectStatus().isOk();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", governorCandidateId, "Governor"))
+                .body(testHelper.buildVoteRequest("4567", governorCandidateId, governorPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.votedPositions.length()").isEqualTo(2);
@@ -259,24 +258,21 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", candidateId, "President"))
+                .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isOk();
+                .expectStatus().isOk();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", candidateId, "President"))
+                .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
@@ -288,10 +284,9 @@ class VoterControllerTest {
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("0000", candidateId, "President"))
+                .body(testHelper.buildVoteRequest("0000", candidateId, presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
@@ -303,37 +298,58 @@ class VoterControllerTest {
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", "invalid", "President"))
+                .body(testHelper.buildVoteRequest("4567", "nonexistentid123", presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
 
     @Test
-    @DisplayName("Test vote with mismatched position fails")
+    @DisplayName("Test vote with mismatched positionId fails")
     void vote_positionMismatchFailsTest() {
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
                 .exchange()
-                .expectStatus()
-                .isCreated();
+                .expectStatus().isCreated();
 
+        // precious is running for president, but we pass governorPosition
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
 
         restTestClient.patch()
                 .uri(url("/vote"))
-                .body(buildVoteRequest("4567", candidateId, "Governor"))
+                .body(testHelper.buildVoteRequest("4567", candidateId, governorPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false);
+    }
+
+    @Test
+    @DisplayName("Test vote fails when election has ended")
+    void vote_electionEndedFailsTest() {
+        restTestClient.post()
+                .uri(url("/voter"))
+                .body(voterJamie)
+                .exchange()
+                .expectStatus().isCreated();
+
+        String candidateId = candidateService.createCandidate(candidatePrecious).getId();
+
+        // push end time to the past
+        ongoingElection.setEndDateTime(ongoingElection.getEndDateTime().minusHours(10));
+        electionRepository.save(ongoingElection);
+
+        restTestClient.patch()
+                .uri(url("/vote"))
+                .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
+                .exchange()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }

@@ -1,10 +1,14 @@
 package dreamdev.moniepoint.controllers;
 
+import dreamdev.moniepoint.TestHelper;
 import dreamdev.moniepoint.data.models.Candidate;
+import dreamdev.moniepoint.data.models.Election;
+import dreamdev.moniepoint.data.models.Position;
 import dreamdev.moniepoint.data.repositories.CandidateRepository;
+import dreamdev.moniepoint.data.repositories.ElectionRepository;
+import dreamdev.moniepoint.data.repositories.PositionRepository;
 import dreamdev.moniepoint.dtos.requests.CandidateRequest;
 import dreamdev.moniepoint.dtos.responses.ApiResponse;
-import dreamdev.moniepoint.dtos.responses.CandidateResponse;
 import dreamdev.moniepoint.services.CandidateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +25,7 @@ import java.util.ArrayList;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 class CandidateControllerTest {
+
     @LocalServerPort
     private int port;
 
@@ -31,13 +36,24 @@ class CandidateControllerTest {
     private CandidateRepository candidateRepository;
 
     @Autowired
+    private ElectionRepository electionRepository;
+
+    @Autowired
+    private PositionRepository positionRepository;
+
+    @Autowired
     private CandidateService candidateService;
 
+    @Autowired
+    private TestHelper testHelper;
+
+    private Election upcomingElection;
+    private Position presidentPosition;
+    private Position governorPosition;
     private CandidateRequest candidatePrecious;
     private CandidateRequest candidateJohn;
 
-    private CandidateResponse candidatePreciousResponse;
-    private CandidateResponse candidateJohnResponse;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String url(String path) {
         return "http://localhost:%d%s".formatted(port, path);
@@ -46,29 +62,16 @@ class CandidateControllerTest {
     @BeforeEach
     void setUp() {
         candidateRepository.deleteAll();
+        positionRepository.deleteAll();
+        electionRepository.deleteAll();
 
-        candidatePrecious = new CandidateRequest();
-        candidatePrecious.setFirstName("Precious");
-        candidatePrecious.setLastName("Michael");
-        candidatePrecious.setPosition("President");
+        upcomingElection = testHelper.createUpcomingElection();
+        presidentPosition = testHelper.createPosition("President", upcomingElection.getId());
+        governorPosition = testHelper.createPosition("Governor", upcomingElection.getId());
 
-        candidateJohn = new CandidateRequest();
-        candidateJohn.setFirstName("John");
-        candidateJohn.setLastName("Doe");
-        candidateJohn.setPosition("President");
-
-        candidatePreciousResponse = new CandidateResponse();
-        candidatePreciousResponse.setFirstName("Precious");
-        candidatePreciousResponse.setLastName("Michael");
-        candidatePreciousResponse.setPosition("President");
-
-        candidateJohnResponse = new CandidateResponse();
-        candidateJohnResponse.setFirstName("John");
-        candidateJohnResponse.setLastName("Doe");
-        candidateJohnResponse.setPosition("President");
+        candidatePrecious = testHelper.buildCandidateRequest("Precious", "Michael", presidentPosition.getId());
+        candidateJohn = testHelper.buildCandidateRequest("John", "Doe", presidentPosition.getId());
     }
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     @DisplayName("Test successful candidate creation")
@@ -77,14 +80,12 @@ class CandidateControllerTest {
                 .uri(url("/candidate"))
                 .body(candidateJohn)
                 .exchange()
-                .expectStatus()
-                .isCreated()
+                .expectStatus().isCreated()
                 .expectBody()
-//                .json(objectMapper.writeValueAsString(response));
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.firstName").isEqualTo("John")
                 .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
+                .jsonPath("$.data.positionTitle").isEqualTo("President")
                 .jsonPath("$.data.voteCount").isEqualTo(0)
                 .jsonPath("$.data.id").exists();
     }
@@ -96,65 +97,47 @@ class CandidateControllerTest {
                 .uri(url("/candidate"))
                 .body(candidateJohn)
                 .exchange()
-                .expectStatus()
-                .isCreated()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.firstName").isEqualTo("John")
-                .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0)
-                .jsonPath("$.data.id").exists();
+                .expectStatus().isCreated();
 
         restTestClient.post()
                 .uri(url("/candidate"))
                 .body(candidateJohn)
                 .exchange()
-                .expectStatus()
-                .isBadRequest()
+                .expectStatus().isBadRequest()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(false);
     }
 
     @Test
-    @DisplayName("Test get all candidates returns list")
-    void getAllCandidates_listIs2Test() {
-        restTestClient.post()
-                .uri(url("/candidate"))
-                .body(candidateJohn)
-                .exchange()
-                .expectStatus()
-                .isCreated()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.firstName").isEqualTo("John")
-                .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0)
-                .jsonPath("$.data.id").exists();
+    @DisplayName("Test candidate registration fails when election is ongoing")
+    void addCandidate_whenElectionOngoing_failsTest() {
+        Election ongoingElection = testHelper.createOngoingElection();
+        Position position = testHelper.createPosition("Senator", ongoingElection.getId());
+        CandidateRequest request = testHelper.buildCandidateRequest("Jane", "Smith", position.getId());
 
         restTestClient.post()
                 .uri(url("/candidate"))
-                .body(candidatePrecious)
+                .body(request)
                 .exchange()
-                .expectStatus()
-                .isCreated()
+                .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.firstName").isEqualTo("Precious")
-                .jsonPath("$.data.lastName").isEqualTo("Michael")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0)
-                .jsonPath("$.data.id").exists();
+                .jsonPath("$.success").isEqualTo(false);
+    }
 
-        restTestClient.get()
-                .uri(url("/candidates"))
+    @Test
+    @DisplayName("Test candidate registration fails when election has ended")
+    void addCandidate_whenElectionEnded_failsTest() {
+        Election endedElection = testHelper.createEndedElection();
+        Position position = testHelper.createPosition("Senator", endedElection.getId());
+        CandidateRequest request = testHelper.buildCandidateRequest("Jane", "Smith", position.getId());
+
+        restTestClient.post()
+                .uri(url("/candidate"))
+                .body(request)
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isBadRequest()
                 .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.length()").isEqualTo(2);
+                .jsonPath("$.success").isEqualTo(false);
     }
 
     @Test
@@ -165,75 +148,118 @@ class CandidateControllerTest {
         restTestClient.get()
                 .uri(url("/candidates"))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .json(objectMapper.writeValueAsString(response));
     }
 
     @Test
-    @DisplayName("Test get candidate by name and position and it succeeds")
-    void getCandidateByName_isSuccessTest() {
-        restTestClient.post()
-                .uri(url("/candidate"))
-                .body(candidateJohn)
+    @DisplayName("Test get all candidates returns list of 2")
+    void getAllCandidates_listIs2Test() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+
+        restTestClient.get()
+                .uri(url("/candidates"))
                 .exchange()
-                .expectStatus()
-                .isCreated()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.length()").isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Test get candidate by id succeeds")
+    void getCandidateById_successTest() {
+        String id = candidateService.createCandidate(candidateJohn).getId();
+
+        restTestClient.get()
+                .uri(url("/candidate/id/" + id))
+                .exchange()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.firstName").isEqualTo("John")
                 .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0)
-                .jsonPath("$.data.id").exists();
+                .jsonPath("$.data.positionTitle").isEqualTo("President")
+                .jsonPath("$.data.voteCount").isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("Test get candidate by invalid id fails")
+    void getCandidateById_invalidIdFailsTest() {
+        restTestClient.get()
+                .uri(url("/candidate/id/nonexistentid123"))
+                .exchange()
+                .expectStatus().isBadRequest()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(false);
+    }
+
+    @Test
+    @DisplayName("Test search candidates by name succeeds")
+    void getCandidateByName_isSuccessTest() {
+        candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
-                .uri(url("/candidates/search?position=President&firstName=John&lastName=Doe"))
+                .uri(url("/candidates/search?firstName=John&lastName=Doe&positionId=" + presidentPosition.getId()))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data[0].firstName").isEqualTo("John")
                 .jsonPath("$.data[0].lastName").isEqualTo("Doe")
-                .jsonPath("$.data[0].position").isEqualTo("President")
+                .jsonPath("$.data[0].positionTitle").isEqualTo("President")
                 .jsonPath("$.data[0].voteCount").isEqualTo(0);
     }
 
     @Test
-    @DisplayName("Search candidates with incomplete fields should return similar matches")
+    @DisplayName("Test search candidates with partial fields returns similar matches")
     void searchCandidates_byIncompleteFieldsTest() {
-        restTestClient.post()
-                .uri(url("/candidate"))
-                .body(candidateJohn)
-                .exchange()
-                .expectStatus()
-                .isCreated()
-                .expectBody()
-                .jsonPath("$.success").isEqualTo(true)
-                .jsonPath("$.data.firstName").isEqualTo("John")
-                .jsonPath("$.data.lastName").isEqualTo("Doe")
-                .jsonPath("$.data.position").isEqualTo("President")
-                .jsonPath("$.data.voteCount").isEqualTo(0)
-                .jsonPath("$.data.id").exists();
+        candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
                 .uri(url("/candidates/search?firstName=jo&lastName=d"))
                 .exchange()
-                .expectStatus()
-                .isOk()
+                .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data[0].firstName").isEqualTo("John")
-                .jsonPath("$.data[0].lastName").isEqualTo("Doe")
-                .jsonPath("$.data[0].position").isEqualTo("President")
-                .jsonPath("$.data[0].voteCount").isEqualTo(0);
+                .jsonPath("$.data[0].lastName").isEqualTo("Doe");
     }
 
+    @Test
+    @DisplayName("Test search candidates case insensitive")
+    void searchCandidates_caseInsensitiveTest() {
+        candidateService.createCandidate(candidatePrecious);
+
+        restTestClient.get()
+                .uri(url("/candidates/search?firstName=PRECIOUS&lastName=MICHAEL"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.length()").isEqualTo(1)
+                .jsonPath("$.data[0].firstName").isEqualTo("Precious");
+    }
 
     @Test
-    @DisplayName("Test that get results returns empty when there are no candidates")
+    @DisplayName("Test search with no params returns all candidates")
+    void searchCandidates_noParamsReturnsAllTest() {
+        candidateService.createCandidate(candidatePrecious);
+        candidateService.createCandidate(candidateJohn);
+
+        restTestClient.get()
+                .uri(url("/candidates/search"))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.success").isEqualTo(true)
+                .jsonPath("$.data.length()").isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Test get results returns empty when no candidates")
     void getResults_emptyTest() {
         restTestClient.get()
                 .uri(url("/results"))
@@ -245,15 +271,11 @@ class CandidateControllerTest {
     }
 
     @Test
-    @DisplayName("Test that get results groups candidates by position")
+    @DisplayName("Test get results groups candidates by position")
     void getResults_groupedByPosition_Test() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-
-        CandidateRequest candidateJane = new CandidateRequest();
-        candidateJane.setFirstName("Jane");
-        candidateJane.setLastName("Doe");
-        candidateJane.setPosition("Governor");
+        CandidateRequest candidateJane = testHelper.buildCandidateRequest("Jane", "Doe", governorPosition.getId());
         candidateService.createCandidate(candidateJane);
 
         restTestClient.get()
@@ -267,7 +289,7 @@ class CandidateControllerTest {
     }
 
     @Test
-    @DisplayName("Test that get results orders candidates by descending vote count")
+    @DisplayName("Test get results orders candidates by descending vote count")
     void getResults_orderedByVoteCount_Test() {
         String preciousId = candidateService.createCandidate(candidatePrecious).getId();
         String johnId = candidateService.createCandidate(candidateJohn).getId();
@@ -289,32 +311,27 @@ class CandidateControllerTest {
                 .jsonPath("$.data.President[1].firstName").isEqualTo("John");
     }
 
-    // ─── GET /results/{position} ──────────────────────────────────────────────
-
     @Test
-    @DisplayName("Test that get results by position returns only that position")
+    @DisplayName("Test get results by positionId returns only that position")
     void getResultsByPosition_successTest() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-        CandidateRequest candidateJane = new CandidateRequest();
-        candidateJane.setFirstName("Jane");
-        candidateJane.setLastName("Doe");
-        candidateJane.setPosition("Governor");
+        CandidateRequest candidateJane = testHelper.buildCandidateRequest("Jane", "Doe", governorPosition.getId());
         candidateService.createCandidate(candidateJane);
 
         restTestClient.get()
-                .uri(url("/results/president"))
+                .uri(url("/results/" + presidentPosition.getId()))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.length()").isEqualTo(2)
-                .jsonPath("$.data[0].position").isEqualTo("President")
-                .jsonPath("$.data[1].position").isEqualTo("President");
+                .jsonPath("$.data[0].positionTitle").isEqualTo("President")
+                .jsonPath("$.data[1].positionTitle").isEqualTo("President");
     }
 
     @Test
-    @DisplayName("Test that get results by position orders by vote count")
+    @DisplayName("Test get results by positionId orders by vote count")
     void getResultsByPosition_orderedByVoteCount_Test() {
         String preciousId = candidateService.createCandidate(candidatePrecious).getId();
         String johnId = candidateService.createCandidate(candidateJohn).getId();
@@ -324,11 +341,11 @@ class CandidateControllerTest {
         candidateRepository.save(candidate);
 
         candidate = candidateRepository.findById(johnId).get();
-        candidate.setVoteCount(4);
+        candidate.setVoteCount(8);
         candidateRepository.save(candidate);
 
         restTestClient.get()
-                .uri(url("/results/president"))
+                .uri(url("/results/" + presidentPosition.getId()))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -337,17 +354,16 @@ class CandidateControllerTest {
     }
 
     @Test
-    @DisplayName("Test that get results by unknown position returns empty list")
+    @DisplayName("Test get results by unknown positionId returns empty list")
     void getResultsByPosition_unknownPosition_returnsEmpty_Test() {
         candidateService.createCandidate(candidatePrecious);
 
         restTestClient.get()
-                .uri(url("/results/senator"))
+                .uri(url("/results/unknownPositionId"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.success").isEqualTo(true)
                 .jsonPath("$.data.length()").isEqualTo(0);
     }
-
 }
