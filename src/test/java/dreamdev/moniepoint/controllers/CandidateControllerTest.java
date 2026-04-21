@@ -147,7 +147,7 @@ class CandidateControllerTest {
         ApiResponse response = new ApiResponse(true, new ArrayList<>());
 
         restTestClient.get()
-                .uri(url("/candidates"))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -161,7 +161,7 @@ class CandidateControllerTest {
         candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
-                .uri(url("/candidates"))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -202,7 +202,7 @@ class CandidateControllerTest {
         candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
-                .uri(url("/candidates/search?firstName=John&lastName=Doe&positionId=" + presidentPosition.getId()))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates/search?firstName=John&lastName=Doe"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -219,7 +219,7 @@ class CandidateControllerTest {
         candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
-                .uri(url("/candidates/search?firstName=jo&lastName=d"))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates/search?firstName=jo&lastName=d"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -234,7 +234,7 @@ class CandidateControllerTest {
         candidateService.createCandidate(candidatePrecious);
 
         restTestClient.get()
-                .uri(url("/candidates/search?firstName=PRECIOUS&lastName=MICHAEL"))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates/search?firstName=PRECIOUS&lastName=MICHAEL"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -250,7 +250,7 @@ class CandidateControllerTest {
         candidateService.createCandidate(candidateJohn);
 
         restTestClient.get()
-                .uri(url("/candidates/search"))
+                .uri(url("/election/" + upcomingElection.getId() + "/candidates/search"))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()

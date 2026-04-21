@@ -273,7 +273,7 @@ class VoterServiceImplTest {
         // save candidate directly — bypassing the upcoming-only check
         candidateService.createCandidate(request);
         VoterResponse voter = voterService.registerVoter(voterJamie);
-        CandidateResponse jane = candidateService.getAllCandidates().stream()
+        CandidateResponse jane = candidateService.getAllCandidates(upcomingElection.getId()).stream()
                 .filter(c -> c.getFirstName().equals("Jane"))
                 .findFirst().get();
 

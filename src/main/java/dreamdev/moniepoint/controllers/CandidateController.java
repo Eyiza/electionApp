@@ -23,10 +23,10 @@ public class CandidateController {
         }
     }
 
-    @GetMapping("/candidates")
-    public ResponseEntity<?> getCandidates(){
+    @GetMapping("/election/{electionId}/candidates")
+    public ResponseEntity<?> getCandidates( @PathVariable("electionId") String electionId){
         try {
-            return new ResponseEntity<>(new ApiResponse(true, candidateService.getAllCandidates()), HttpStatus.OK);
+            return new ResponseEntity<>(new ApiResponse(true, candidateService.getAllCandidates(electionId)), HttpStatus.OK);
         } catch (ElectionAppException e){
             return new ResponseEntity<>(new ApiResponse(false, e.getMessage()), HttpStatus.BAD_REQUEST);
         }
@@ -41,14 +41,15 @@ public class CandidateController {
         }
     }
 
-    @GetMapping("/candidates/search")
+    @GetMapping("/election/{electionId}/candidates/search")
     public ResponseEntity<?> searchCandidates(
+            @PathVariable("electionId") String electionId,
             @RequestParam(value = "firstName",required = false, defaultValue = "") String firstName,
             @RequestParam(value = "lastName", required = false, defaultValue = "") String lastName,
             @RequestParam(value = "position", required = false, defaultValue = "") String position) {
         try {
             return new ResponseEntity<>(
-                    new ApiResponse(true, candidateService.searchCandidates(firstName, lastName)),
+                    new ApiResponse(true, candidateService.searchCandidates(electionId, firstName, lastName)),
                     HttpStatus.OK
             );
         } catch (ElectionAppException e) {

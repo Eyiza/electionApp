@@ -102,7 +102,7 @@ public class CandidateServiceImplTest {
 
     @Test
     public void getAllCandidates_emptyListTest() {
-        List<CandidateResponse> candidates = candidateService.getAllCandidates();
+        List<CandidateResponse> candidates = candidateService.getAllCandidates(upcomingElection.getId());
         assertTrue(candidates.isEmpty());
     }
 
@@ -110,7 +110,7 @@ public class CandidateServiceImplTest {
     public void getAllCandidates_returnsAllCandidatesTest() {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
-        List<CandidateResponse> candidates = candidateService.getAllCandidates();
+        List<CandidateResponse> candidates = candidateService.getAllCandidates(upcomingElection.getId());
         assertEquals(2, candidates.size());
     }
 
@@ -119,7 +119,7 @@ public class CandidateServiceImplTest {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
 
-        List<CandidateResponse> candidates = candidateService.getAllCandidates();
+        List<CandidateResponse> candidates = candidateService.getAllCandidates(upcomingElection.getId());
         assertEquals(2, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());
@@ -150,7 +150,7 @@ public class CandidateServiceImplTest {
         candidateService.createCandidate(candidatePrecious);
         candidateService.createCandidate(candidateJohn);
 
-        List<CandidateResponse> candidates = candidateService.searchCandidates("precious", "michael");
+        List<CandidateResponse> candidates = candidateService.searchCandidates(upcomingElection.getId(), "precious", "michael");
         assertEquals(1, candidates.size());
         assertEquals("Precious", candidates.get(0).getFirstName());
         assertEquals("Michael", candidates.get(0).getLastName());

@@ -63,8 +63,14 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public List<CandidateResponse> getAllCandidates() {
-        List<Candidate> candidates = candidateRepository.findAll();
+    public List<CandidateResponse> getAllCandidates(String electionId) {
+        Optional<Election> optionalElection = electionRepository.findById(electionId);
+        if (optionalElection.isEmpty()) throw new InvalidElectionException("Specified Election does not exist");
+        System.out.println(optionalElection.get().toString());
+        List<String> positionIds = optionalElection.get().getPositionIds();
+        if (positionIds == null || positionIds.isEmpty()) return List.of();
+
+        List<Candidate> candidates = candidateRepository.findByPositionIdIn(positionIds);
         List<CandidateResponse> candidateResponses = new ArrayList<>();
         for (Candidate candidate : candidates) {
             Position position = positionRepository.findById(candidate.getPositionId()).get();
@@ -83,8 +89,14 @@ public class CandidateServiceImpl implements CandidateService {
     }
 
     @Override
-    public List<CandidateResponse> searchCandidates(String firstName, String lastName) {
-        List<Candidate> candidates = candidateRepository.searchByFields(firstName, lastName);
+    public List<CandidateResponse> searchCandidates(String electionId, String firstName, String lastName) {
+        Optional<Election> optionalElection = electionRepository.findById(electionId);
+        if (optionalElection.isEmpty()) throw new InvalidElectionException("Specified Election does not exist");
+
+        List<String> positionIds = optionalElection.get().getPositionIds();
+        if (positionIds == null || positionIds.isEmpty()) return List.of();
+
+        List<Candidate> candidates = candidateRepository.searchByFieldsAndPositionIdIn(firstName, lastName, positionIds);
         List<CandidateResponse> candidateResponses = new ArrayList<>();
         for (Candidate candidate : candidates) {
             Position position = positionRepository.findById(candidate.getPositionId()).get();

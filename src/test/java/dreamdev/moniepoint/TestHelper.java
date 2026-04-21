@@ -14,6 +14,8 @@ import dreamdev.moniepoint.utils.ElectionStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 @Component
 public class TestHelper {
 
@@ -68,7 +70,11 @@ public class TestHelper {
         PositionRequest request = new PositionRequest();
         request.setTitle(title);
         request.setElectionId(electionId);
-        return positionRepository.save(buildPosition(request));
+        Position savedPosition = positionRepository.save(buildPosition(request));
+        Optional<Election> election = electionRepository.findById(electionId);
+        election.get().getPositionIds().add(savedPosition.getId());
+        electionRepository.save(election.get());
+        return savedPosition;
     }
 
     public CandidateRequest buildCandidateRequest(String firstName, String lastName, String positionId) {

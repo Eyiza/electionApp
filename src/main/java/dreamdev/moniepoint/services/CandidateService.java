@@ -8,9 +8,9 @@ import java.util.Map;
 
 public interface CandidateService {
     CandidateResponse createCandidate(CandidateRequest candidateRequest);
-    List<CandidateResponse> getAllCandidates();
+    List<CandidateResponse> getAllCandidates(String electionId);
     CandidateResponse getCandidate(String id);
-    List<CandidateResponse> searchCandidates(String firstName, String lastName);
+    List<CandidateResponse> searchCandidates(String electionId, String firstName, String lastName);
     Map<String, List<CandidateResponse>> getResults();
     List<CandidateResponse> getResultsByPosition(String position);
 }
