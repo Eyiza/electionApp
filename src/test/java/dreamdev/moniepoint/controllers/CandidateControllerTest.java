@@ -20,6 +20,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -172,9 +173,8 @@ class CandidateControllerTest {
     @DisplayName("Test get candidate by id succeeds")
     void getCandidateById_successTest() {
         String id = candidateService.createCandidate(candidateJohn).getId();
-
         restTestClient.get()
-                .uri(url("/candidate/id/" + id))
+                .uri(url("/candidate/" + id))
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -189,7 +189,7 @@ class CandidateControllerTest {
     @DisplayName("Test get candidate by invalid id fails")
     void getCandidateById_invalidIdFailsTest() {
         restTestClient.get()
-                .uri(url("/candidate/id/nonexistentid123"))
+                .uri(url("/candidate/123"))
                 .exchange()
                 .expectStatus().isBadRequest()
                 .expectBody()

@@ -20,6 +20,8 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.client.RestTestClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.LocalDateTime;
+
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureRestTestClient
 class VoterControllerTest {
@@ -90,6 +92,18 @@ class VoterControllerTest {
         electionRepository.save(upcomingElection);
 
         ongoingElection = electionRepository.findById(upcomingElection.getId()).get();
+    }
+
+    private void makeElectionUpcoming() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().plusHours(2));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(5));
+        electionRepository.save(ongoingElection);
+    }
+
+    private void makeElectionOngoing() {
+        ongoingElection.setStartDateTime(LocalDateTime.now().minusHours(1));
+        ongoingElection.setEndDateTime(LocalDateTime.now().plusHours(2));
+        electionRepository.save(ongoingElection);
     }
 
     @Test
@@ -203,6 +217,7 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test vote succeeds and returns vote response")
     void vote_successTest() {
+        makeElectionUpcoming();
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
@@ -210,7 +225,7 @@ class VoterControllerTest {
                 .expectStatus().isCreated();
 
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
-
+        makeElectionOngoing();
         restTestClient.patch()
                 .uri(url("/vote"))
                 .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
@@ -226,6 +241,7 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test voter can vote for two different positions")
     void vote_twoPositions_successTest() {
+        makeElectionUpcoming();
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
@@ -234,6 +250,8 @@ class VoterControllerTest {
 
         String presidentialCandidateId = candidateService.createCandidate(candidatePrecious).getId();
         String governorCandidateId = candidateService.createCandidate(candidateJohn).getId();
+
+        makeElectionOngoing();
 
         restTestClient.patch()
                 .uri(url("/vote"))
@@ -254,6 +272,7 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test voter cannot vote twice for same position")
     void vote_alreadyVotedForPositionFailsTest() {
+        makeElectionUpcoming();
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
@@ -261,7 +280,7 @@ class VoterControllerTest {
                 .expectStatus().isCreated();
 
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
-
+        makeElectionOngoing();
         restTestClient.patch()
                 .uri(url("/vote"))
                 .body(testHelper.buildVoteRequest("4567", candidateId, presidentPosition.getId()))
@@ -280,8 +299,9 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test vote with unregistered NIN fails")
     void vote_unregisteredVoterFailsTest() {
+        makeElectionUpcoming();
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
-
+        makeElectionOngoing();
         restTestClient.patch()
                 .uri(url("/vote"))
                 .body(testHelper.buildVoteRequest("0000", candidateId, presidentPosition.getId()))
@@ -312,6 +332,7 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test vote with mismatched positionId fails")
     void vote_positionMismatchFailsTest() {
+        makeElectionUpcoming();
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
@@ -320,7 +341,7 @@ class VoterControllerTest {
 
         // precious is running for president, but we pass governorPosition
         String candidateId = candidateService.createCandidate(candidatePrecious).getId();
-
+        makeElectionOngoing();
         restTestClient.patch()
                 .uri(url("/vote"))
                 .body(testHelper.buildVoteRequest("4567", candidateId, governorPosition.getId()))
@@ -333,6 +354,7 @@ class VoterControllerTest {
     @Test
     @DisplayName("Test vote fails when election has ended")
     void vote_electionEndedFailsTest() {
+        makeElectionUpcoming();
         restTestClient.post()
                 .uri(url("/voter"))
                 .body(voterJamie)
