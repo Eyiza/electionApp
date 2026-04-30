@@ -1,0 +1,15 @@
+docker pull nginx:1.29.8
+docker run -d --name precious -p 8000:80 nginx:1.29.8 
+docker ps
+docker stop container_id or container_name
+docker ps -a
+docker remove container_id or container_name
+docker start container_id or container_name
+
+docker build -t tag_name 
+
+docker compose build --no-cache backend 
+docker compose build --no-cache backend && docker compose up
+docker compose up --build
+docker compose up 
+docker compose down
