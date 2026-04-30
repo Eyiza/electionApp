@@ -1,0 +1,60 @@
+services:
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: election_mongo
+    ports:
+      - "27017:27017"         # expose so you can still connect with MongoDB Compass
+    volumes:
+      - mongo_data:/data/db   # persist data across container restarts
+    environment:
+      MONGO_INITDB_DATABASE: electiondb
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Spring Boot backend
+  backend:
+    build: .
+    container_name: election_backend
+    ports:
+      - "8080:8080"
+    environment:
+      # Overrides whatever is in application.properties.
+      # "mongodb" here is the service name above — Docker's internal DNS
+      # resolves it automatically. This is why you use "mongodb" instead of "localhost".
+      SPRING_MONGODB_URI: mongodb://mongodb:27017/electiondb
+    depends_on:
+      mongodb:               # ensures mongo starts before the backend
+        condition: service_healthy
+    restart: unless-stopped
+
+  # React frontend
+  frontend:
+    build:
+      context: ../dreamdevs_frontend/electionApp # folder containing your React project + Dockerfile
+      dockerfile: Dockerfile
+    container_name: election_frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code into the container so Vite picks up your edits live.
+      # Think of it like a shared folder between your laptop and the container —
+      # you edit on your machine, the container sees it instantly.
+      - ../dreamdevs_frontend/electionApp:/app
+      # This line is critical — it prevents the host mount from overwriting
+      # the node_modules that were installed inside the container.
+      # Without it, your Mac/Windows node_modules would clash with the Linux ones.
+      - /app/node_modules
+    environment:
+      - VITE_APP_BASE_URL=http://localhost:8080
+      - CHOKIDAR_USEPOLLING=true    # needed on some machines for hot reload to work inside Docker
+    depends_on:
+      - backend
+
+volumes:
+  mongo_data:
