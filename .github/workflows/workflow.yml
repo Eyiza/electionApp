@@ -60,5 +60,6 @@ jobs:
           application_name: election-app
           environment_name: election-app-env
           region: ${{ secrets.AWS_REGION }}
-          version_label: "backend-v${{ github.run_number }}"
+          version_label: "backend-v${{ github.sha }}"
           deployment_package: deploy.zip
+          use_existing_version_if_available: true
