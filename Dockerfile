@@ -1,25 +1,13 @@
-# Build the jar
-FROM maven:3.9-eclipse-temurin-25 AS builder
-
+# Stage 1: Build
+FROM maven:3.9-eclipse-temurin-25 AS build
 WORKDIR /app
-
-# Copy pom.xml first so Maven dependency layer is cached separately.
-# Think of it like installing npm packages before copying your source code —
-# if only your code changes, Docker reuses the cached dependencies layer.
 COPY pom.xml .
-RUN mvn dependency:go-offline -q
-
-# Now copy source and build
 COPY src ./src
-RUN mvn package -DskipTests -q
+RUN mvn clean package -DskipTests
 
-# Run the jar
+# Stage 2: Run
 FROM eclipse-temurin:25-jre-alpine
-
 WORKDIR /app
-
-COPY --from=builder /app/target/*.jar app.jar
-
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -36,7 +36,7 @@ services:
   # React frontend
   frontend:
     build:
-      context: ../dreamdevs_frontend/electionApp # folder containing your React project + Dockerfile
+      context: ../dreamdevs_frontend/electionApp # folder containing your React project + Backend.Dockerfile
       dockerfile: Dockerfile
     container_name: election_frontend
     ports:
